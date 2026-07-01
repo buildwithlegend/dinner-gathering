@@ -10,7 +10,7 @@
         .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccg; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #f9f9f9; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #f9f9f9; }
         .datetime-group { display: flex; gap: 10px; }
         .datetime-group input { flex: 1; }
         
@@ -33,35 +33,33 @@
         .group-count { background: #ff9500; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .group-meta { font-size: 14px; color: #8e8e93; margin-top: 5px; }
 
+        /* ❌ 過往失效返灰的群組樣式 */
+        .group-card.expired { background: #e5e5ea; border-color: #d1d1d6; cursor: not-allowed; opacity: 0.6; transform: none !important; box-shadow: none !important; }
+        .group-card.expired .group-title { color: #8e8e93; }
+        .group-card.expired .group-count { background: #8e8e93; }
+
         /* 小群組內部畫面 */
         .room-header { border-bottom: 2px solid #007AFF; padding-bottom: 10px; margin-bottom: 15px; }
         .room-title { font-size: 22px; font-weight: bold; color: #007AFF; }
         .attendee-list { background: #f2f2f7; padding: 12px; border-radius: 8px; margin: 15px 0; min-height: 50px; }
-        .tag { display: inline-block; background: #007AFF; color: white; padding: 4px 10px; border-radius: 6px; margin: 4px; font-size: 14px; font-weight: 500; }
         
-        .sync-section { background: #fff3cd; color: #856404; padding: 15px; border-radius: 12px; font-size: 13px; margin-bottom: 15px; }
-        textarea { width: 100%; height: 50px; border-radius: 6px; border: 1px solid #ccc; padding: 5px; box-sizing: border-box; margin-bottom: 5px; }
+        /* 團員標籤與取消報名按鈕 */
+        .tag-wrapper { display: inline-flex; align-items: center; background: #007AFF; color: white; border-radius: 6px; margin: 4px; padding-left: 10px; overflow: hidden; }
+        .tag-name { font-size: 14px; font-weight: 500; padding: 4px 0; }
+        .btn-cancel { background: #ff3b30; color: white; border: none; padding: 6px 8px; font-size: 12px; cursor: pointer; font-weight: bold; margin-left: 8px; transition: 0.2s; }
+        .btn-cancel:hover { background: #d7261e; }
     </style>
 </head>
 <body>
 
     <div id="pageHall" class="page active">
         <h1>💬 揪團小群組大廳</h1>
-        
-        <div class="sync-section">
-            <strong>🔄 同步過往群組紀錄：</strong><br>
-            <input type="text" id="syncInput" placeholder="在此貼上朋友的代碼並點匯入" style="width:70%; padding:5px; border-radius:4px; border:1px solid #ccc;">
-            <button onclick="importData()" style="width:26%; padding:6px; font-size:12px; display:inline-block; margin-left:2%;">匯入同步</button>
-            <div id="exportArea" style="display:none; margin-top:8px;">
-                <button onclick="copySyncCode()" style="background:#e67e22; padding:6px; font-size:12px;">📋 點此複製我的最新同步代碼給朋友</button>
-            </div>
-        </div>
 
         <div class="card">
             <h2>➕ 開立一個新小群組</h2>
             <div class="form-group">
                 <label>聚會主題 / 群組名稱</label>
-                <input type="text" id="eventTitle" placeholder="例如：今晚8點吃高雄左營XX路晚餐">
+                <input type="text" id="eventTitle" placeholder="例如：早上8點XX路麥當勞吃早餐">
             </div>
             <div class="form-group">
                 <label>設定日期與時間</label>
@@ -100,7 +98,7 @@
                     <input type="text" id="userNameInput" placeholder="請輸入姓名">
                     <button class="btn-join" onclick="submitJoin()" style="width:auto; padding:0 20px;">報名送出</button>
                 </div>
-                <p style="font-size:12px; color:#8e8e93; margin-top:5px;">💡 提示：每人只能佔一個位置，重複輸入送出會自動修改成新名字。</p>
+                <p style="font-size:12px; color:#8e8e93; margin-top:5px;">💡 提示：輸入新姓名送出即可修改已填寫的內容。</p>
             </div>
 
             <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開小群組，回到大廳</button>
@@ -110,30 +108,28 @@
 
     <script>
         let globalData = { events: [] };
-        let currentRoomId = null; // 紀錄目前身處哪一個小群組
+        let currentRoomId = null;
 
-        // 產生瀏覽器唯一識別碼，防止同一個人在同個群組內重覆佔位
+        // 產生瀏覽器唯一識別碼，防止重複填寫，並供取消報名使用
         if (!localStorage.getItem('userId')) {
             localStorage.setItem('userId', 'user_' + Math.random().toString(36).substr(2, 9));
         }
         const myUserId = localStorage.getItem('userId');
 
-        // 【載入/儲存資料邏輯】
+        // 【載入/儲存資料】
         function loadData() {
             const local = localStorage.getItem('group_party_data');
             if (local) { try { globalData = JSON.parse(local); } catch(e){} }
             renderGroupList();
-            updateExportCode();
         }
 
         function saveData() {
             localStorage.setItem('group_party_data', JSON.stringify(globalData));
             renderGroupList();
-            updateExportCode();
-            if (currentRoomId) { enterRoom(currentRoomId); } // 如果在房間內，同步重繪房間
+            if (currentRoomId) { enterRoom(currentRoomId); }
         }
 
-        // 【大廳：發布並建立小群組】
+        // 【功能：建立新群組】
         function createGroup() {
             const title = document.getElementById('eventTitle').value.trim();
             const date = document.getElementById('eventDate').value;
@@ -151,12 +147,11 @@
                 date: date,
                 time: time,
                 location: location,
-                attendees: {} // 存放 {userId: name}
+                attendees: {} 
             };
 
             globalData.events.push(newGroup);
             
-            // 清空輸入框
             document.getElementById('eventTitle').value = '';
             document.getElementById('eventDate').value = '';
             document.getElementById('eventTime').value = '';
@@ -166,7 +161,15 @@
             alert('小群組成功開立！已加入下方列表。');
         }
 
-        // 【大廳：渲染小群組卡片列表】
+        // 【功能：判斷群組時間是否已過期】
+        function isEventExpired(dateStr, timeStr) {
+            if (!dateStr || !timeStr) return false;
+            const eventDateTime = new Date(`${dateStr}T${timeStr}`);
+            const now = new Date();
+            return now > eventDateTime;
+        }
+
+        // 【大廳：渲染小群組列表】
         function renderGroupList() {
             const listDiv = document.getElementById('groupList');
             listDiv.innerHTML = '';
@@ -176,27 +179,35 @@
                 return;
             }
 
-            // 最新開立的排在最前面
             [...globalData.events].reverse().forEach(group => {
                 const count = Object.keys(group.attendees || {}).length;
                 const card = document.createElement('div');
-                card.className = 'group-card';
-                card.onclick = () => switchPage('room', group.id);
+                
+                // 判斷是否過期
+                const expired = isEventExpired(group.date, group.time);
+                
+                if (expired) {
+                    card.className = 'group-card expired';
+                    card.onclick = null; // ❌ 鎖定點擊，無法選擇
+                } else {
+                    card.className = 'group-card';
+                    card.onclick = () => switchPage('room', group.id);
+                }
                 
                 card.innerHTML = `
                     <div class="group-title">
-                        <span>💬 ${group.title}</span>
+                        <span>💬 ${group.title} ${expired ? '<span style="color:#ff3b30;">[已過期]</span>' : ''}</span>
                         <span class="group-count">成員 ${count} 人</span>
                     </div>
                     <div class="group-meta">📅 時間：${group.date} ${group.time}</div>
                     <div class="group-meta">📍 地點：${group.location}</div>
-                    <div style="text-align:right; font-size:12px; color:#007AFF; margin-top:5px; font-weight:bold;">點擊進入群組 ➔</div>
+                    ${expired ? '' : '<div style="text-align:right; font-size:12px; color:#007AFF; margin-top:5px; font-weight:bold;">點擊進入群組 ➔</div>'}
                 `;
                 listDiv.appendChild(card);
             });
         }
 
-        // 【切換頁面機制】
+        // 【切換頁面】
         function switchPage(pageName, roomId = null) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             if (pageName === 'hall') {
@@ -209,7 +220,7 @@
             }
         }
 
-        // 【群組房間：載入房間內部數據】
+        // 【群組房間：載入內部名單】
         function enterRoom(roomId) {
             const group = globalData.events.find(e => e.id === roomId);
             if (!group) return;
@@ -218,24 +229,37 @@
             document.getElementById('roomMeta').innerHTML = `📅 時間：${group.date} ${group.time}<br>📍 地點：${group.location}`;
             
             const attendeeMap = group.attendees || {};
-            const attendeeNames = Object.values(attendeeMap);
             
-            // 顯示人數
-            document.getElementById('roomCount').innerText = attendeeNames.length;
+            // 渲染人數
+            const attendeeKeys = Object.keys(attendeeMap);
+            document.getElementById('roomCount').innerText = attendeeKeys.length;
 
-            // 渲染成員名單標籤
+            // 渲染成員名單（包含各自的取消按鈕）
             const attendeesDiv = document.getElementById('roomAttendees');
-            if (attendeeNames.length === 0) {
+            attendeesDiv.innerHTML = '';
+
+            if (attendeeKeys.length === 0) {
                 attendeesDiv.innerHTML = '<p style="color:#999; text-align:center; margin:0;">目前群組尚無成員，輸入姓名成為第一個加入者吧！</p>';
             } else {
-                attendeesDiv.innerHTML = attendeeNames.map(name => `<span class="tag">👤 ${name}</span>`).join('');
+                attendeeKeys.forEach(id => {
+                    const name = attendeeMap[id];
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'tag-wrapper';
+                    
+                    // 如果是自己，就加一個紅色 ❌ 取消報名按鈕
+                    const isMe = (id === myUserId);
+                    wrapper.innerHTML = `
+                        <span class="tag-name">👤 ${name}</span>
+                        ${isMe ? `<button class="btn-cancel" onclick="cancelJoin('${roomId}')">❌ 取消報名</button>` : ''}
+                    `;
+                    attendeesDiv.appendChild(wrapper);
+                });
             }
 
-            // 預填自己曾經在這個房間填過的名字
             document.getElementById('userNameInput').value = attendeeMap[myUserId] || '';
         }
 
-        // 【群組房間：報名送出/修改名字】
+        // 【功能：報名送出】
         function submitJoin() {
             const name = document.getElementById('userNameInput').value.trim();
             if (!name) { alert('請輸入您的名字再行報名！'); return; }
@@ -243,11 +267,21 @@
             const group = globalData.events.find(e => e.id === currentRoomId);
             if (group) {
                 if (!group.attendees) group.attendees = {};
-                
-                // 以 myUserId 作為金鑰，覆蓋寫入，達成一人限一票、可更改名字
-                group.attendees[myUserId] = name;
+                group.attendees[myUserId] = name; 
                 saveData();
                 alert('成功加入群組名單！');
+            }
+        }
+
+        // 【功能：❌ 取消報名機制】
+        function cancelJoin(roomId) {
+            if (!confirm('確定要取消在此群組的報名嗎？')) return;
+            
+            const group = globalData.events.find(e => e.id === roomId);
+            if (group && group.attendees && group.attendees[myUserId]) {
+                delete group.attendees[myUserId]; // 從資料庫移除該用戶
+                saveData();
+                alert('已成功取消報名！');
             }
         }
 
@@ -255,50 +289,6 @@
             switchPage('hall');
         }
 
-        // 【功能：代碼分享同步機制】
-        function updateExportCode() {
-            const area = document.getElementById('exportArea');
-            if (globalData.events.length > 0) {
-                area.style.display = 'block';
-            } else {
-                area.style.display = 'none';
-            }
-        }
-
-        function copySyncCode() {
-            const dummy = document.createElement("textarea");
-            document.body.appendChild(dummy);
-            dummy.value = btoa(encodeURIComponent(JSON.stringify(globalData)));
-            dummy.select();
-            document.execCommand("copy");
-            document.body.removeChild(dummy);
-            alert('最新群組與報名代碼已複製！可以傳給 LINE 朋友了，他們匯入後就能完全同步！');
-        }
-
-        function importData() {
-            const code = document.getElementById('syncInput').value.trim();
-            if (!code) { alert('請貼上朋友分享的代碼！'); return; }
-            try {
-                const decodedData = JSON.parse(decodeURIComponent(atob(code)));
-                if (decodedData && decodedData.events) {
-                    decodedData.events.forEach(incoming => {
-                        const existing = globalData.events.find(e => e.id === incoming.id);
-                        if (existing) {
-                            existing.attendees = { ...existing.attendees, ...incoming.attendees };
-                        } else {
-                            globalData.events.push(incoming);
-                        }
-                    });
-                    document.getElementById('syncInput').value = '';
-                    saveData();
-                    alert('🔄 所有歷史小群組及名單已完成智慧同步！');
-                }
-            } catch(e) {
-                alert('同步代碼格式錯誤，請重新複製！');
-            }
-        }
-
-        // 啟動載入
         loadData();
     </script>
 </body>
