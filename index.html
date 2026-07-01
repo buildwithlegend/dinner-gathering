@@ -29,13 +29,37 @@
         /* 小群組卡片外觀 */
         .group-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 15px; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative; }
         .group-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #007AFF; }
-        .group-title { font-size: 18px; font-weight: bold; color: #1c1c1e; display: flex; justify-content: space-between; align-items: center; padding-right: 40px; }
-        .group-count { background: #ff9500; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; flex-shrink: 0; }
+        
+        /* 微調標題區塊，預留右上角給刪除按鈕 */
+        .group-title { font-size: 18px; font-weight: bold; color: #1c1c1e; display: flex; justify-content: space-between; align-items: center; padding-right: 35px; }
+        .group-count { background: #ff9500; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; flex-shrink: 0; margin-left: 10px; }
         .group-meta { font-size: 14px; color: #8e8e93; margin-top: 5px; }
 
-        /* 🔒 刪除按鈕樣式 */
-        .btn-delete-group { position: absolute; top: 12px; right: 12px; background: #ff3b30; color: white; border: none; border-radius: 6px; padding: 5px 8px; font-size: 12px; font-weight: bold; cursor: pointer; z-index: 10; transition: 0.2s; }
-        .btn-delete-group:hover { background: #d7261e; }
+        /* 🔒 修正：修飾後小巧的右上角刪除按鈕 */
+        .btn-delete-group { 
+            position: absolute; 
+            top: 12px; 
+            right: 12px; 
+            background: rgba(255, 59, 48, 0.1); 
+            color: #ff3b30; 
+            border: none; 
+            border-radius: 50%; 
+            width: 24px; 
+            height: 24px; 
+            padding: 0;
+            font-size: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            z-index: 10; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s; 
+        }
+        .btn-delete-group:hover { 
+            background: #ff3b30; 
+            color: white; 
+        }
 
         /* 過往失效返灰的群組樣式 */
         .group-card.expired { background: #e5e5ea; border-color: #d1d1d6; opacity: 0.6; transform: none !important; box-shadow: none !important; }
@@ -193,9 +217,8 @@
                 const expired = isEventExpired(group.date, group.time);
                 card.className = expired ? 'group-card expired' : 'group-card';
                 
-                // 點擊卡片進入群組（如果過期，則無法進入，但管理者仍可在大廳點刪除）
+                // 點擊卡片進入群組
                 card.onclick = (e) => {
-                    // 如果點到的是刪除按鈕，不觸發進入群組頁面
                     if (e.target.tagName === 'BUTTON') return;
                     if (expired) {
                         alert('該活動小群組已過期關閉，無法進入。');
@@ -204,9 +227,9 @@
                     switchPage('room', group.id);
                 };
                 
-                // 卡片內部 HTML（內含帶有權限防護的刪除按鈕）
+                // 卡片內部 HTML（刪除按鈕改為右上角乾淨的紅色小叉叉 ✕）
                 card.innerHTML = `
-                    <button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}')">🗑️ 刪除</button>
+                    <button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}')" title="刪除群組">✕</button>
                     <div class="group-title">
                         <span>💬 ${group.title} ${expired ? '<span style="color:#ff3b30;">[已過期]</span>' : ''}</span>
                         <span class="group-count">成員 ${count} 人</span>
@@ -221,25 +244,19 @@
 
         // 【功能：🔒 刪除小群組功能（帶有權限驗證）】
         function deleteGroup(event, roomId) {
-            // 阻止事件冒泡，防止點刪除按鈕時誤觸進入小群組房間
             event.stopPropagation();
 
-            // 1. 先確認是否真的要刪除
             if (!confirm('您確定要永久刪除這個小群組嗎？')) return;
 
-            // 2. 彈出權限驗證視窗
             const userInput = prompt('⚠️ 此操作需要權限。請輸入管理員暗號：');
             
-            if (userInput === null) return; // 使用者按取消
+            if (userInput === null) return; 
 
-            // 3. 比對暗號
             if (userInput === ADMIN_SECRET_CODE) {
-                // 驗證成功，過濾掉該群組
                 globalData.events = globalData.events.filter(e => e.id !== roomId);
                 saveData();
                 alert('🗑️ 小群組已成功刪除！');
             } else {
-                // 驗證失敗
                 alert('❌ 暗號錯誤！您沒有權限刪除此群組。');
             }
         }
