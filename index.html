@@ -3,238 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>免伺服器 隨時揪團報名系統</title>
+    <title>多功能揪團小群組系統</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 30px auto; padding: 20px; background-color: #f7f9fc; color: #333; }
-        h1, h2 { text-align: center; color: #2c3e50; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
+        h1, h2 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
+        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccg; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #f9f9f9; }
         .datetime-group { display: flex; gap: 10px; }
         .datetime-group input { flex: 1; }
-        button { background: #3498db; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
-        button:hover { background: #2980b9; }
-        .event-item { border-left: 5px solid #2ecc71; padding-left: 15px; margin-bottom: 20px; }
-        .event-title { font-size: 18px; font-weight: bold; color: #2c3e50; }
-        .event-meta { font-size: 14px; color: #7f8c8d; margin: 5px 0; }
-        .join-box { display: flex; gap: 10px; margin-top: 12px; }
-        .join-box input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        .join-box button { width: auto; padding: 8px 15px; background: #2ecc71; }
-        .join-box button:hover { background: #27ae60; }
-        .attendees { margin-top: 10px; font-size: 14px; background: #f8f9fa; padding: 10px; border-radius: 6px; }
-        .tag { display: inline-block; background: #e1f5fe; color: #0288d1; padding: 3px 8px; border-radius: 4px; margin-right: 5px; font-size: 13px; font-weight: 500; }
-        .sync-box { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        textarea { width: 100%; height: 60px; margin-bottom: 10px; padding: 8px; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; }
+        
+        /* 頁面切換控制 */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* 按鈕視覺 */
+        button { background: #007AFF; color: white; border: none; padding: 12px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #0056b3; }
+        .btn-secondary { background: #8e8e93; margin-top: 10px; }
+        .btn-secondary:hover { background: #636366; }
+        .btn-join { background: #34c759; }
+        .btn-join:hover { background: #28a745; }
+
+        /* 小群組卡片外觀 */
+        .group-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 15px; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .group-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #007AFF; }
+        .group-title { font-size: 18px; font-weight: bold; color: #1c1c1e; display: flex; justify-content: space-between; align-items: center; }
+        .group-count { background: #ff9500; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .group-meta { font-size: 14px; color: #8e8e93; margin-top: 5px; }
+
+        /* 小群組內部畫面 */
+        .room-header { border-bottom: 2px solid #007AFF; padding-bottom: 10px; margin-bottom: 15px; }
+        .room-title { font-size: 22px; font-weight: bold; color: #007AFF; }
+        .attendee-list { background: #f2f2f7; padding: 12px; border-radius: 8px; margin: 15px 0; min-height: 50px; }
+        .tag { display: inline-block; background: #007AFF; color: white; padding: 4px 10px; border-radius: 6px; margin: 4px; font-size: 14px; font-weight: 500; }
+        
+        .sync-section { background: #fff3cd; color: #856404; padding: 15px; border-radius: 12px; font-size: 13px; margin-bottom: 15px; }
+        textarea { width: 100%; height: 50px; border-radius: 6px; border: 1px solid #ccc; padding: 5px; box-sizing: border-box; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
-    <h1>📅 100% 可行版：隨時揪團報名系統</h1>
-
-    <div class="card sync-box">
-        <h3>🔄 同步與載入過往紀錄</h3>
-        <p style="font-size: 13px; margin-top: -5px;">把朋友傳給你的「同步代碼」貼在下面並點擊匯入，即可同步所有人開的活動與名單！</p>
-        <textarea id="syncInput" placeholder="在此貼上朋友分享的同步代碼..."></textarea>
-        <button style="background: #e67e22;" onclick="importData()">📥 匯入並同步紀錄</button>
-    </div>
-
-    <div class="card">
-        <h2>➕ 發起新活動（每個人都可以開）</h2>
-        <div class="form-group">
-            <label>活動主題 / 吃飯目的</label>
-            <input type="text" id="eventTitle" placeholder="例如：聚餐吃晚餐、唱歌團">
-        </div>
-        <div class="form-group">
-            <label>設定日期與時間</label>
-            <div class="datetime-group">
-                <input type="date" id="eventDate">
-                <input type="time" id="eventTime">
+    <div id="pageHall" class="page active">
+        <h1>💬 揪團小群組大廳</h1>
+        
+        <div class="sync-section">
+            <strong>🔄 同步過往群組紀錄：</strong><br>
+            <input type="text" id="syncInput" placeholder="在此貼上朋友的代碼並點匯入" style="width:70%; padding:5px; border-radius:4px; border:1px solid #ccc;">
+            <button onclick="importData()" style="width:26%; padding:6px; font-size:12px; display:inline-block; margin-left:2%;">匯入同步</button>
+            <div id="exportArea" style="display:none; margin-top:8px;">
+                <button onclick="copySyncCode()" style="background:#e67e22; padding:6px; font-size:12px;">📋 點此複製我的最新同步代碼給朋友</button>
             </div>
         </div>
-        <div class="form-group">
-            <label>集合地點</label>
-            <input type="text" id="eventLocation" placeholder="例如：高雄左營XX路321號">
+
+        <div class="card">
+            <h2>➕ 開立一個新小群組</h2>
+            <div class="form-group">
+                <label>聚會主題 / 群組名稱</label>
+                <input type="text" id="eventTitle" placeholder="例如：今晚8點吃高雄左營XX路晚餐">
+            </div>
+            <div class="form-group">
+                <label>設定日期與時間</label>
+                <div class="datetime-group">
+                    <input type="date" id="eventDate">
+                    <input type="time" id="eventTime">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>集合地點</label>
+                <input type="text" id="eventLocation" placeholder="例如：某某餐廳或詳細地址">
+            </div>
+            <button onclick="createGroup()">發布並開立小群組</button>
         </div>
-        <button onclick="createEvent()">發布活動</button>
+
+        <h2>📋 目前已開立的小群組列表</h2>
+        <div id="groupList"></div>
     </div>
 
-    <h2>📋 所有活動與報名歷史紀錄</h2>
-    <div id="eventList"></div>
 
-    <div class="card" id="exportCard" style="display:none; background: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
-        <h3>🔗 分享給朋友的同步代碼</h3>
-        <p style="font-size: 13px;">複製下方整串文字傳給朋友，他們匯入後就能看到你新開的活動或報名名字！</p>
-        <textarea id="exportOutput" readonly onclick="this.select()"></textarea>
-        <button style="background: #28a745;" onclick="copySyncCode()">📋 一鍵複製同步代碼</button>
+    <div id="pageRoom" class="page">
+        <div class="card">
+            <div class="room-header">
+                <div class="room-title" id="roomTitle">活動小群組</div>
+                <div class="group-meta" id="roomMeta">時間 / 地點</div>
+            </div>
+            
+            <h3>👥 目前群組參加人數：<span id="roomCount" style="color:#ff9500; font-size:22px;">0</span> 人</h3>
+            
+            <div class="attendee-list" id="roomAttendees">
+                </div>
+
+            <div class="form-group" style="margin-top:20px;">
+                <label>填寫您的姓名加入此群組：</label>
+                <div class="datetime-group">
+                    <input type="text" id="userNameInput" placeholder="請輸入姓名">
+                    <button class="btn-join" onclick="submitJoin()" style="width:auto; padding:0 20px;">報名送出</button>
+                </div>
+                <p style="font-size:12px; color:#8e8e93; margin-top:5px;">💡 提示：每人只能佔一個位置，重複輸入送出會自動修改成新名字。</p>
+            </div>
+
+            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開小群組，回到大廳</button>
+        </div>
     </div>
+
 
     <script>
         let globalData = { events: [] };
+        let currentRoomId = null; // 紀錄目前身處哪一個小群組
 
-        // 產生唯一使用者 ID (防重複填寫，可修改)
+        // 產生瀏覽器唯一識別碼，防止同一個人在同個群組內重覆佔位
         if (!localStorage.getItem('userId')) {
             localStorage.setItem('userId', 'user_' + Math.random().toString(36).substr(2, 9));
         }
         const myUserId = localStorage.getItem('userId');
 
-        // 初始化：讀取自己電腦的舊紀錄
-        function loadLocalData() {
-            const local = localStorage.getItem('gathering_data');
-            if (local) {
-                try { globalData = JSON.parse(local); } catch(e) { globalData = { events: [] }; }
-            }
-            renderEvents();
+        // 【載入/儲存資料邏輯】
+        function loadData() {
+            const local = localStorage.getItem('group_party_data');
+            if (local) { try { globalData = JSON.parse(local); } catch(e){} }
+            renderGroupList();
             updateExportCode();
         }
 
-        // 儲存到本地並刷新
-        function saveLocalData() {
-            localStorage.setItem('gathering_data', JSON.stringify(globalData));
-            renderEvents();
+        function saveData() {
+            localStorage.setItem('group_party_data', JSON.stringify(globalData));
+            renderGroupList();
             updateExportCode();
+            if (currentRoomId) { enterRoom(currentRoomId); } // 如果在房間內，同步重繪房間
         }
 
-        // 繪製畫面
-        function renderEvents() {
-            const eventListDiv = document.getElementById('eventList');
-            eventListDiv.innerHTML = '';
-
-            const events = globalData.events || [];
-            if (events.length === 0) {
-                eventListDiv.innerHTML = '<p style="text-align:center; color:#999;">目前沒有任何活動紀錄。請在上方發起新活動！</p>';
-                return;
-            }
-
-            // 最新發布的排在最上面
-            [...events].reverse().forEach((event) => {
-                const attendeeMap = event.attendees || {};
-                const attendeeNames = Object.values(attendeeMap);
-                const myCurrentName = attendeeMap[myUserId] || ''; 
-
-                const card = document.createElement('div');
-                card.className = 'card event-item';
-                
-                card.innerHTML = `
-                    <div class="event-title">${event.title}</div>
-                    <div class="event-meta">📅 時間：${event.date || '未定'} ${event.time || ''}</div>
-                    <div class="event-meta">📍 地點：${event.location}</div>
-                    <div class="attendees">
-                        <strong>👥 已報名名單 (${attendeeNames.length}人)：</strong>
-                        <div>${attendeeNames.length > 0 ? attendeeNames.map(n => `<span class="tag">${n}</span>`).join('') : '暫無人報名'}</div>
-                    </div>
-                    <div class="join-box">
-                        <input type="text" id="name-${event.id}" placeholder="${myCurrentName ? `已填：${myCurrentName} (重新輸入可修改)` : '輸入姓名報名'}" />
-                        <button onclick="joinEvent('${event.id}')">${myCurrentName ? '修改名字' : '我要報名'}</button>
-                    </div>
-                `;
-                eventListDiv.appendChild(card);
-            });
-        }
-
-        // 【功能：發起新活動】
-        function createEvent() {
+        // 【大廳：發布並建立小群組】
+        function createGroup() {
             const title = document.getElementById('eventTitle').value.trim();
             const date = document.getElementById('eventDate').value;
             const time = document.getElementById('eventTime').value;
             const location = document.getElementById('eventLocation').value.trim();
 
-            if (!title || !date || !time || !location) { 
-                alert('請填寫完整的主題、日期、時間與地點！'); 
-                return; 
+            if (!title || !date || !time || !location) {
+                alert('請填寫完整的群組主題、日期時間與地點！');
+                return;
             }
 
-            const newEvent = {
-                id: 'evt_' + Date.now(),
+            const newGroup = {
+                id: 'room_' + Date.now(),
                 title: title,
                 date: date,
                 time: time,
                 location: location,
-                attendees: {}
+                attendees: {} // 存放 {userId: name}
             };
 
-            if (!globalData.events) globalData.events = [];
-            globalData.events.push(newEvent);
-
+            globalData.events.push(newGroup);
+            
+            // 清空輸入框
             document.getElementById('eventTitle').value = '';
             document.getElementById('eventDate').value = '';
             document.getElementById('eventTime').value = '';
             document.getElementById('eventLocation').value = '';
 
-            saveLocalData();
-            alert('活動成功建立在您的列表！請複製最下方的同步代碼分享給朋友！');
+            saveData();
+            alert('小群組成功開立！已加入下方列表。');
         }
 
-        // 【功能：報名/修改名字】
-        function joinEvent(eventId) {
-            const nameInput = document.getElementById(`name-${eventId}`);
-            const name = nameInput.value.trim();
-            if (!name) { alert('請輸入您的姓名！'); return; }
+        // 【大廳：渲染小群組卡片列表】
+        function renderGroupList() {
+            const listDiv = document.getElementById('groupList');
+            listDiv.innerHTML = '';
 
-            const event = globalData.events.find(e => e.id === eventId);
-            if (event) {
-                if (!event.attendees) event.attendees = {};
-                event.attendees[myUserId] = name; // 重複提交會直接覆蓋修改
-                nameInput.value = '';
-                saveLocalData();
-                alert('報名/修改成功！請複製最下方的最新同步代碼分享出去！');
+            if (globalData.events.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">目前大廳空空如也，快開立第一個小群組吧！</p>';
+                return;
+            }
+
+            // 最新開立的排在最前面
+            [...globalData.events].reverse().forEach(group => {
+                const count = Object.keys(group.attendees || {}).length;
+                const card = document.createElement('div');
+                card.className = 'group-card';
+                card.onclick = () => switchPage('room', group.id);
+                
+                card.innerHTML = `
+                    <div class="group-title">
+                        <span>💬 ${group.title}</span>
+                        <span class="group-count">成員 ${count} 人</span>
+                    </div>
+                    <div class="group-meta">📅 時間：${group.date} ${group.time}</div>
+                    <div class="group-meta">📍 地點：${group.location}</div>
+                    <div style="text-align:right; font-size:12px; color:#007AFF; margin-top:5px; font-weight:bold;">點擊進入群組 ➔</div>
+                `;
+                listDiv.appendChild(card);
+            });
+        }
+
+        // 【切換頁面機制】
+        function switchPage(pageName, roomId = null) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            if (pageName === 'hall') {
+                currentRoomId = null;
+                document.getElementById('pageHall').classList.add('active');
+            } else if (pageName === 'room') {
+                currentRoomId = roomId;
+                enterRoom(roomId);
+                document.getElementById('pageRoom').classList.add('active');
             }
         }
 
-        // 【功能：更新匯出代碼】
-        function updateExportCode() {
-            const exportCard = document.getElementById('exportCard');
-            const exportOutput = document.getElementById('exportOutput');
-            if (globalData.events && globalData.events.length > 0) {
-                exportCard.style.display = 'block';
-                // 將資料做簡單加密編碼成文字串
-                exportOutput.value = btoa(encodeURIComponent(JSON.stringify(globalData)));
+        // 【群組房間：載入房間內部數據】
+        function enterRoom(roomId) {
+            const group = globalData.events.find(e => e.id === roomId);
+            if (!group) return;
+
+            document.getElementById('roomTitle').innerText = "💬 " + group.title;
+            document.getElementById('roomMeta').innerHTML = `📅 時間：${group.date} ${group.time}<br>📍 地點：${group.location}`;
+            
+            const attendeeMap = group.attendees || {};
+            const attendeeNames = Object.values(attendeeMap);
+            
+            // 顯示人數
+            document.getElementById('roomCount').innerText = attendeeNames.length;
+
+            // 渲染成員名單標籤
+            const attendeesDiv = document.getElementById('roomAttendees');
+            if (attendeeNames.length === 0) {
+                attendeesDiv.innerHTML = '<p style="color:#999; text-align:center; margin:0;">目前群組尚無成員，輸入姓名成為第一個加入者吧！</p>';
             } else {
-                exportCard.style.display = 'none';
+                attendeesDiv.innerHTML = attendeeNames.map(name => `<span class="tag">👤 ${name}</span>`).join('');
+            }
+
+            // 預填自己曾經在這個房間填過的名字
+            document.getElementById('userNameInput').value = attendeeMap[myUserId] || '';
+        }
+
+        // 【群組房間：報名送出/修改名字】
+        function submitJoin() {
+            const name = document.getElementById('userNameInput').value.trim();
+            if (!name) { alert('請輸入您的名字再行報名！'); return; }
+
+            const group = globalData.events.find(e => e.id === currentRoomId);
+            if (group) {
+                if (!group.attendees) group.attendees = {};
+                
+                // 以 myUserId 作為金鑰，覆蓋寫入，達成一人限一票、可更改名字
+                group.attendees[myUserId] = name;
+                saveData();
+                alert('成功加入群組名單！');
             }
         }
 
-        // 【功能：一鍵複製】
-        function copySyncCode() {
-            const exportOutput = document.getElementById('exportOutput');
-            exportOutput.select();
-            document.execCommand('copy');
-            alert('代碼已複製！可以傳給 LINE 朋友了！');
+        function goBackToHall() {
+            switchPage('hall');
         }
 
-        // 【功能：匯入別人的資料並合併紀錄】
+        // 【功能：代碼分享同步機制】
+        function updateExportCode() {
+            const area = document.getElementById('exportArea');
+            if (globalData.events.length > 0) {
+                area.style.display = 'block';
+            } else {
+                area.style.display = 'none';
+            }
+        }
+
+        function copySyncCode() {
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = btoa(encodeURIComponent(JSON.stringify(globalData)));
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            alert('最新群組與報名代碼已複製！可以傳給 LINE 朋友了，他們匯入後就能完全同步！');
+        }
+
         function importData() {
             const code = document.getElementById('syncInput').value.trim();
-            if (!code) { alert('請先貼上代碼！'); return; }
+            if (!code) { alert('請貼上朋友分享的代碼！'); return; }
             try {
                 const decodedData = JSON.parse(decodeURIComponent(atob(code)));
                 if (decodedData && decodedData.events) {
-                    
-                    // 智慧合併演算法：如果活動一樣就更新名單，不一樣就新增
-                    decodedData.events.forEach(incomingEvent => {
-                        const existingEvent = globalData.events.find(e => e.id === incomingEvent.id);
-                        if (existingEvent) {
-                            // 合併報名名單
-                            existingEvent.attendees = { ...existingEvent.attendees, ...incomingEvent.attendees };
+                    decodedData.events.forEach(incoming => {
+                        const existing = globalData.events.find(e => e.id === incoming.id);
+                        if (existing) {
+                            existing.attendees = { ...existing.attendees, ...incoming.attendees };
                         } else {
-                            globalData.events.push(incomingEvent);
+                            globalData.events.push(incoming);
                         }
                     });
-
-                    saveLocalData();
                     document.getElementById('syncInput').value = '';
-                    alert('🔄 歷史紀錄與名單同步成功！');
+                    saveData();
+                    alert('🔄 所有歷史小群組及名單已完成智慧同步！');
                 }
             } catch(e) {
-                alert('代碼錯誤或不完整，請重新複製再試！');
+                alert('同步代碼格式錯誤，請重新複製！');
             }
         }
 
-        // 開啟網頁自動載入
-        loadLocalData();
-    </script>
-</body>
-</html>
+        // 啟動載入
         loadData();
     </script>
 </body>
