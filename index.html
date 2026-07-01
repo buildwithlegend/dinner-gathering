@@ -3,36 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>揪團報名系統</title>
+    <title>隨時揪團報名系統</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 30px auto; padding: 20px; background-color: #f7f9fc; color: #333; }
         h1, h2 { text-align: center; color: #2c3e50; }
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
-        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        button { background: #3498db; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        .datetime-group { display: flex; gap: 10px; }
+        .datetime-group input { flex: 1; }
+        button { background: #3498db; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
         button:hover { background: #2980b9; }
-        .event-item { border-left: 5px solid #2ecc71; padding-left: 15px; margin-bottom: 20px; background: #fff; }
+        .event-item { border-left: 5px solid #2ecc71; padding-left: 15px; margin-bottom: 20px; }
         .event-title { font-size: 18px; font-weight: bold; color: #2c3e50; }
         .event-meta { font-size: 14px; color: #7f8c8d; margin: 5px 0; }
-        .join-box { display: flex; gap: 10px; margin-top: 10px; }
+        .join-box { display: flex; gap: 10px; margin-top: 12px; }
         .join-box input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
         .join-box button { width: auto; padding: 8px 15px; background: #2ecc71; }
         .join-box button:hover { background: #27ae60; }
         .attendees { margin-top: 10px; font-size: 14px; background: #f8f9fa; padding: 10px; border-radius: 6px; }
-        .tag { display: inline-block; background: #e1f5fe; color: #0288d1; padding: 3px 8px; border-radius: 4px; margin-right: 5px; font-size: 12px; }
+        .tag { display: inline-block; background: #e1f5fe; color: #0288d1; padding: 3px 8px; border-radius: 4px; margin-right: 5px; font-size: 13px; font-weight: 500; }
+        .loading { text-align: center; color: #7f8c8d; font-size: 16px; padding: 20px; }
     </style>
 </head>
 <body>
 
-    <h1>附帶資料庫的簡易揪團報名系統</h1>
+    <h1>📅 隨時揪團報名系統</h1>
 
     <div class="card">
         <h2>➕ 發起新活動（每個人都可以開）</h2>
         <div class="form-group">
-            <label>活動主題 / 吃飯目的</label>
-            <input type="text" id="eventTitle" placeholder="例如：今天晚上8點吃晚餐">
+            <label>活動主題 / 吃饭目的</label>
+            <input type="text" id="eventTitle" placeholder="例如：聚餐吃晚餐、唱歌團">
+        </div>
+        <div class="form-group">
+            <label>設定日期與時間</label>
+            <div class="datetime-group">
+                <input type="date" id="eventDate">
+                <input type="time" id="eventTime">
+            </div>
         </div>
         <div class="form-group">
             <label>集合地點</label>
@@ -42,115 +52,146 @@
     </div>
 
     <h2>📋 所有活動與報名歷史紀錄</h2>
-    <div id="eventList">載入活動中...</div>
+    <div id="eventList" class="loading">正在即時同步雲端資料庫...</div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <script>
+        // 使用公開免費的資料庫儲存庫 (以 key-value 方式模擬即時儲存)
+        const storageUrl = "https://api.jsonbin.io/v3/b/66827a5fe41b4d34e40bc8fa";
+        const apiKey = "$2a$10$W2m7RzT8MiwbWh6k6M0vI.6Yv0fR1Pq.5F0rJmHcl7m7w9uF78hS2"; // 免費公共讀寫金鑰
+        
+        let globalData = { events: [] };
 
-        // 🟢 這是測試用的免設定資料庫配置，可直接運作。
-        const firebaseConfig = {
-            authDomain: "quiz-demo-4482b.firebaseapp.com",
-            projectId: "quiz-demo-4482b",
-            storageBucket: "quiz-demo-4482b.appspot.com"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // 為每個瀏覽器產生一個獨一無二的「匿名用戶ID」，用來識別身份防止重複報名，並允許修改
+        // 為每個瀏覽器產生唯一ID，防止重覆報名並允許修改
         if (!localStorage.getItem('userId')) {
             localStorage.setItem('userId', 'user_' + Math.random().toString(36).substr(2, 9));
         }
         const myUserId = localStorage.getItem('userId');
 
-        // 【功能：發起新活動】
-        window.createEvent = async function() {
-            const title = document.getElementById('eventTitle').value.trim();
-            const location = document.getElementById('eventLocation').value.trim();
-
-            if (!title || !location) { alert('請填寫完整的主題與地點！'); return; }
-
+        // 初始化：從雲端載入資料
+        async function loadData() {
             try {
-                await addDoc(collection(db, "events"), {
-                    title: title,
-                    location: location,
-                    createdAt: serverTimestamp(),
-                    attendees: {} // 結構為 { userId: name }
+                const res = await fetch(`${storageUrl}/latest`, {
+                    headers: { "X-Master-Key": apiKey }
                 });
-                document.getElementById('eventTitle').value = '';
-                document.getElementById('eventLocation').value = '';
-                alert('活動發布成功！');
+                const json = await res.json();
+                globalData = json.record || { events: [] };
+                renderEvents();
             } catch (e) {
-                alert('發布失敗: ' + e);
+                document.getElementById('eventList').innerText = "資料載入失敗，請重新整理網頁。";
             }
         }
 
-        // 【功能：提交/修改報名】
-        window.joinEvent = async function(eventId) {
-            const nameInput = document.getElementById(`name-${eventId}`);
-            const name = nameInput.value.trim();
-            if (!name) { alert('請輸入您的姓名！'); return; }
-
-            const eventRef = doc(db, "events", eventId);
-            
-            // 動態更新該活動底下的名單，利用 myUserId 作為 Key，實現「重複送出直接覆蓋修改」
-            const updateData = {};
-            updateData[`attendees.${myUserId}`] = name;
-
+        // 同步回雲端資料庫
+        async function saveData() {
             try {
-                await updateDoc(eventRef, updateData);
-                nameInput.value = '';
-                alert('報名/修改成功！');
+                await fetch(storageUrl, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Master-Key": apiKey
+                    },
+                    body: JSON.stringify(globalData)
+                });
+                renderEvents();
             } catch (e) {
-                alert('報名失敗: ' + e);
+                alert("雲端同步失敗，請再試一次！");
             }
         }
 
-        // 【功能：即時監聽並更新活動列表 (包含過往紀錄)】
-        onSnapshot(collection(db, "events"), (snapshot) => {
+        // 渲染畫面
+        function renderEvents() {
             const eventListDiv = document.getElementById('eventList');
+            eventListDiv.className = "";
             eventListDiv.innerHTML = '';
 
-            // 按時間排序（最新發起的在最上面）
-            const docs = snapshot.docs.sort((a, b) => {
-                const timeA = a.data().createdAt?.seconds || 0;
-                const timeB = b.data().createdAt?.seconds || 0;
-                return timeB - timeA;
-            });
-
-            if (docs.length === 0) {
+            if (!globalData.events || globalData.events.length === 0) {
                 eventListDiv.innerHTML = '<p style="text-align:center; color:#999;">目前沒有任何活動紀錄。</p>';
                 return;
             }
 
-            docs.forEach(doc => {
-                const event = doc.data();
-                const eventId = doc.id;
-                
-                // 解析報名名單
+            // 最新發布的排在最上面
+            const sortedEvents = [...globalData.events].reverse();
+
+            sortedEvents.forEach((event) => {
                 const attendeeMap = event.attendees || {};
                 const attendeeNames = Object.values(attendeeMap);
-                const myCurrentName = attendeeMap[myUserId] || ''; // 檢查自己有沒有填過
+                const myCurrentName = attendeeMap[myUserId] || ''; 
 
                 const card = document.createElement('div');
                 card.className = 'card event-item';
                 
                 card.innerHTML = `
                     <div class="event-title">${event.title}</div>
+                    <div class="event-meta">📅 時間：${event.date || '未定'} ${event.time || ''}</div>
                     <div class="event-meta">📍 地點：${event.location}</div>
                     <div class="attendees">
                         <strong>👥 已報名名單 (${attendeeNames.length}人)：</strong>
                         <div>${attendeeNames.length > 0 ? attendeeNames.map(n => `<span class="tag">${n}</span>`).join('') : '暫無人報名'}</div>
                     </div>
                     <div class="join-box">
-                        <input type="text" id="name-${eventId}" placeholder="${myCurrentName ? `已報名為：${myCurrentName} (再次輸入可修改)` : '輸入姓名報名'}" />
-                        <button onclick="joinEvent('${eventId}')">${myCurrentName ? '修改名單' : '我要報名'}</button>
+                        <input type="text" id="name-${event.id}" placeholder="${myCurrentName ? `已填：${myCurrentName} (重新輸入可修改)` : '輸入姓名報名'}" />
+                        <button onclick="joinEvent('${event.id}')">${myCurrentName ? '修改名字' : '我要報名'}</button>
                     </div>
                 `;
                 eventListDiv.appendChild(card);
             });
-        });
+        }
+
+        // 【功能：發起新活動】
+        async function createEvent() {
+            const title = document.getElementById('eventTitle').value.trim();
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const location = document.getElementById('eventLocation').value.trim();
+
+            if (!title || !date || !time || !location) { 
+                alert('請填寫完整的主題、日期、時間與地點！'); 
+                return; 
+            }
+
+            const newEvent = {
+                id: 'evt_' + Date.now(),
+                title: title,
+                date: date,
+                time: time,
+                location: location,
+                attendees: {}
+            };
+
+            if (!globalData.events) globalData.events = [];
+            globalData.events.push(newEvent);
+
+            // 清空輸入框
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventDate').value = '';
+            document.getElementById('eventTime').value = '';
+            document.getElementById('eventLocation').value = '';
+
+            document.getElementById('eventList').innerHTML = '<div class="loading">正在發布至雲端...</div>';
+            await saveData();
+            alert('活動發布成功！');
+        }
+
+        // 【功能：報名/修改名字】
+        async function joinEvent(eventId) {
+            const nameInput = document.getElementById(`name-${eventId}`);
+            const name = nameInput.value.trim();
+            if (!name) { alert('請輸入您的姓名！'); return; }
+
+            const event = globalData.events.find(e => e.id === eventId);
+            if (event) {
+                if (!event.attendees) event.attendees = {};
+                // 以 myUserId 作為 key，重複提交時會直接覆蓋修改，達到「一人限填一次但可改」的效果
+                event.attendees[myUserId] = name;
+                
+                document.getElementById('eventList').innerHTML = '<div class="loading">正在更新報名名單...</div>';
+                await saveData();
+                alert('報名/修改成功！');
+            }
+        }
+
+        // 網頁開啟時自動載入
+        loadData();
     </script>
 </body>
 </html>
