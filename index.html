@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多功能揪團小群組系統</title>
+    <title>雲端即時同步 揪團小群組系統</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
         h1, h2 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
@@ -14,11 +14,9 @@
         .datetime-group { display: flex; gap: 10px; }
         .datetime-group input { flex: 1; }
         
-        /* 頁面切換控制 */
         .page { display: none; }
         .page.active { display: block; }
 
-        /* 按鈕視覺 */
         button { background: #007AFF; color: white; border: none; padding: 12px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
         button:hover { background: #0056b3; }
         .btn-secondary { background: #8e8e93; margin-top: 10px; }
@@ -26,68 +24,47 @@
         .btn-join { background: #34c759; }
         .btn-join:hover { background: #28a745; }
 
-        /* 小群組卡片外觀 */
         .group-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 15px; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative; }
         .group-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #007AFF; }
         
-        /* 微調標題區塊，預留右上角給刪除按鈕 */
         .group-title { font-size: 18px; font-weight: bold; color: #1c1c1e; display: flex; justify-content: space-between; align-items: center; padding-right: 35px; }
         .group-count { background: #ff9500; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; flex-shrink: 0; margin-left: 10px; }
         .group-meta { font-size: 14px; color: #8e8e93; margin-top: 5px; }
 
-        /* 🔒 修正：修飾後小巧的右上角刪除按鈕 */
         .btn-delete-group { 
-            position: absolute; 
-            top: 12px; 
-            right: 12px; 
-            background: rgba(255, 59, 48, 0.1); 
-            color: #ff3b30; 
-            border: none; 
-            border-radius: 50%; 
-            width: 24px; 
-            height: 24px; 
-            padding: 0;
-            font-size: 12px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            z-index: 10; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s; 
+            position: absolute; top: 12px; right: 12px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; 
+            border: none; border-radius: 50%; width: 24px; height: 24px; padding: 0; font-size: 12px; 
+            font-weight: bold; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: 0.2s; 
         }
-        .btn-delete-group:hover { 
-            background: #ff3b30; 
-            color: white; 
-        }
+        .btn-delete-group:hover { background: #ff3b30; color: white; }
 
-        /* 過往失效返灰的群組樣式 */
         .group-card.expired { background: #e5e5ea; border-color: #d1d1d6; opacity: 0.6; transform: none !important; box-shadow: none !important; }
         .group-card.expired .group-title { color: #8e8e93; }
         .group-card.expired .group-count { background: #8e8e93; }
 
-        /* 小群組內部畫面 */
         .room-header { border-bottom: 2px solid #007AFF; padding-bottom: 10px; margin-bottom: 15px; }
         .room-title { font-size: 22px; font-weight: bold; color: #007AFF; }
         .attendee-list { background: #f2f2f7; padding: 12px; border-radius: 8px; margin: 15px 0; min-height: 50px; }
         
-        /* 團員標籤與取消報名按鈕 */
         .tag-wrapper { display: inline-flex; align-items: center; background: #007AFF; color: white; border-radius: 6px; margin: 4px; padding-left: 10px; overflow: hidden; }
         .tag-name { font-size: 14px; font-weight: 500; padding: 4px 0; }
         .btn-cancel { background: #ff3b30; color: white; border: none; padding: 6px 8px; font-size: 12px; cursor: pointer; font-weight: bold; margin-left: 8px; transition: 0.2s; }
         .btn-cancel:hover { background: #d7261e; }
+        
+        .loading-hint { text-align: center; color: #8e8e93; font-size: 14px; margin-bottom: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="pageHall" class="page active">
-        <h1>💬 揪團小群組大廳</h1>
+        <h1>💬 雲端即時同步 揪團大廳</h1>
+        <div id="cloudStatus" class="loading-hint">正在連線至雲端資料庫...</div>
 
         <div class="card">
             <h2>➕ 開立一個新小群組</h2>
             <div class="form-group">
                 <label>聚會主題 / 群組名稱</label>
-                <input type="text" id="eventTitle" placeholder="例如：早上8點XX路麥當勞吃早餐">
+                <input type="text" id="eventTitle" placeholder="例如：早上8點麥當勞吃早餐">
             </div>
             <div class="form-group">
                 <label>設定日期與時間</label>
@@ -107,7 +84,6 @@
         <div id="groupList"></div>
     </div>
 
-
     <div id="pageRoom" class="page">
         <div class="card">
             <div class="room-header">
@@ -116,9 +92,7 @@
             </div>
             
             <h3>👥 目前群組參加人數：<span id="roomCount" style="color:#ff9500; font-size:22px;">0</span> 人</h3>
-            
-            <div class="attendee-list" id="roomAttendees">
-                </div>
+            <div class="attendee-list" id="roomAttendees"></div>
 
             <div class="form-group" style="margin-top:20px;">
                 <label>填寫您的姓名加入此群組：</label>
@@ -126,17 +100,17 @@
                     <input type="text" id="userNameInput" placeholder="請輸入姓名">
                     <button class="btn-join" onclick="submitJoin()" style="width:auto; padding:0 20px;">報名送出</button>
                 </div>
-                <p style="font-size:12px; color:#8e8e93; margin-top:5px;">💡 提示：輸入新姓名送出即可修改已填寫的內容。</p>
             </div>
-
             <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開小群組，回到大廳</button>
         </div>
     </div>
 
-
     <script>
-        // 🔑 【管理員暗號設定】 你可以把下面的 'admin123' 改成你自己想要的密碼！
+        // 🔑 【管理員權限密碼】可以自行修改
         const ADMIN_SECRET_CODE = 'admin123';
+
+        // 🔒 已自動為您填入您專屬的 JSONbin 雲端金鑰
+        const BIN_KEY = "$2a$10$lM4uTdzFpXR14Csn8B1SyOev7/JMWMTvjp4K1kc/2sKa/KtxcYzUa"; 
 
         let globalData = { events: [] };
         let currentRoomId = null;
@@ -146,199 +120,186 @@
         }
         const myUserId = localStorage.getItem('userId');
 
-        // 【載入/儲存資料】
-        function loadData() {
-            const local = localStorage.getItem('group_party_data');
-            if (local) { try { globalData = JSON.parse(local); } catch(e){} }
-            renderGroupList();
+        // 【安全獲取專屬資料庫 ID 連結】
+        function getBinId() {
+            return localStorage.getItem('jsonbin_assigned_id');
         }
 
-        function saveData() {
-            localStorage.setItem('group_party_data', JSON.stringify(globalData));
-            renderGroupList();
-            if (currentRoomId) { enterRoom(currentRoomId); }
+        // 【從雲端下載資料】
+        async function loadData() {
+            updateStatus("☁️ 正在即時同步雲端名單...");
+            const currentBinId = getBinId();
+            try {
+                // 如果是此設備第一次連線，自動在雲端向 JSONbin 申請分配一個專屬儲存槽
+                if (!currentBinId) {
+                    const res = await fetch("https://api.jsonbin.io/v3/b", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "X-Master-Key": BIN_KEY, "X-Bin-Private": "false" },
+                        body: JSON.stringify({ events: [] })
+                    });
+                    const d = await res.json();
+                    localStorage.setItem('jsonbin_assigned_id', d.metadata.id);
+                    globalData = { events: [] };
+                } else {
+                    const res = await fetch(`https://api.jsonbin.io/v3/b/${currentBinId}/latest`, {
+                        headers: { "X-Master-Key": BIN_KEY }
+                    });
+                    const d = await res.json();
+                    globalData = d.record || { events: [] };
+                }
+                updateStatus("✅ 雲端連線成功");
+                renderGroupList();
+                if (currentRoomId) { enterRoom(currentRoomId); }
+            } catch(e) {
+                updateStatus("❌ 雲端連線失敗，請稍後重試");
+            }
         }
 
-        // 【功能：建立新群組】
+        // 【將資料上傳存入雲端】
+        async function saveData() {
+            updateStatus("💾 正在同步更新至雲端...");
+            const currentBinId = getBinId();
+            if (!currentBinId) return;
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${currentBinId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json", "X-Master-Key": BIN_KEY },
+                    body: JSON.stringify(globalData)
+                });
+                updateStatus("✅ 雲端資料已同步");
+                renderGroupList();
+                if (currentRoomId) { enterRoom(currentRoomId); }
+            } catch(e) {
+                updateStatus("❌ 儲存失敗");
+            }
+        }
+
+        function updateStatus(text) {
+            document.getElementById('cloudStatus').innerText = text;
+        }
+
         function createGroup() {
             const title = document.getElementById('eventTitle').value.trim();
             const date = document.getElementById('eventDate').value;
             const time = document.getElementById('eventTime').value;
             const location = document.getElementById('eventLocation').value.trim();
 
-            if (!title || !date || !time || !location) {
-                alert('請填寫完整的群組主題、日期時間與地點！');
-                return;
-            }
+            if (!title || !date || !time || !location) { alert('請填寫完整群組資料！'); return; }
 
             const newGroup = {
-                id: 'room_' + Date.now(),
-                title: title,
-                date: date,
-                time: time,
-                location: location,
-                attendees: {} 
+                id: 'room_' + Date.now(), title: title, date: date, time: time, location: location, attendees: {} 
             };
-
             globalData.events.push(newGroup);
             
             document.getElementById('eventTitle').value = '';
             document.getElementById('eventDate').value = '';
             document.getElementById('eventTime').value = '';
             document.getElementById('eventLocation').value = '';
-
             saveData();
-            alert('小群組成功開立！已加入下方列表。');
         }
 
-        // 【功能：判斷群組時間是否已過期】
         function isEventExpired(dateStr, timeStr) {
             if (!dateStr || !timeStr) return false;
-            const eventDateTime = new Date(`${dateStr}T${timeStr}`);
-            const now = new Date();
-            return now > eventDateTime;
+            return new Date() > new Date(`${dateStr}T${timeStr}`);
         }
 
-        // 【大廳：渲染小群組列表】
         function renderGroupList() {
             const listDiv = document.getElementById('groupList');
             listDiv.innerHTML = '';
-
-            if (globalData.events.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">目前大廳空空如也，快開立第一個小群組吧！</p>';
+            if (!globalData.events || globalData.events.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">目前大廳空空如也。</p>';
                 return;
             }
-
             [...globalData.events].reverse().forEach(group => {
                 const count = Object.keys(group.attendees || {}).length;
                 const card = document.createElement('div');
-                
-                // 判斷是否過期
                 const expired = isEventExpired(group.date, group.time);
                 card.className = expired ? 'group-card expired' : 'group-card';
-                
-                // 點擊卡片進入群組
                 card.onclick = (e) => {
                     if (e.target.tagName === 'BUTTON') return;
-                    if (expired) {
-                        alert('該活動小群組已過期關閉，無法進入。');
-                        return;
-                    }
+                    if (expired) { alert('該活動小群組已過期關閉。'); return; }
                     switchPage('room', group.id);
                 };
-                
-                // 卡片內部 HTML（刪除按鈕改為右上角乾淨的紅色小叉叉 ✕）
                 card.innerHTML = `
-                    <button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}')" title="刪除群組">✕</button>
+                    <button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}')">✕</button>
                     <div class="group-title">
                         <span>💬 ${group.title} ${expired ? '<span style="color:#ff3b30;">[已過期]</span>' : ''}</span>
                         <span class="group-count">成員 ${count} 人</span>
                     </div>
                     <div class="group-meta">📅 時間：${group.date} ${group.time}</div>
                     <div class="group-meta">📍 地點：${group.location}</div>
-                    ${expired ? '' : '<div style="text-align:right; font-size:12px; color:#007AFF; margin-top:5px; font-weight:bold;">點擊進入群組 ➔</div>'}
                 `;
                 listDiv.appendChild(card);
             });
         }
 
-        // 【功能：🔒 刪除小群組功能（帶有權限驗證）】
         function deleteGroup(event, roomId) {
             event.stopPropagation();
-
             if (!confirm('您確定要永久刪除這個小群組嗎？')) return;
-
-            const userInput = prompt('⚠️ 此操作需要權限。請輸入管理員暗號：');
-            
-            if (userInput === null) return; 
-
+            const userInput = prompt('請輸入管理員暗號：');
             if (userInput === ADMIN_SECRET_CODE) {
                 globalData.events = globalData.events.filter(e => e.id !== roomId);
                 saveData();
-                alert('🗑️ 小群組已成功刪除！');
-            } else {
-                alert('❌ 暗號錯誤！您沒有權限刪除此群組。');
-            }
+            } else if (userInput !== null) { alert('❌ 暗號錯誤！'); }
         }
 
-        // 【切換頁面】
         function switchPage(pageName, roomId = null) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            if (pageName === 'hall') {
-                currentRoomId = null;
-                document.getElementById('pageHall').classList.add('active');
-            } else if (pageName === 'room') {
-                currentRoomId = roomId;
-                enterRoom(roomId);
-                document.getElementById('pageRoom').classList.add('active');
-            }
+            if (pageName === 'hall') { currentRoomId = null; document.getElementById('pageHall').classList.add('active'); loadData(); } 
+            else if (pageName === 'room') { currentRoomId = roomId; enterRoom(roomId); document.getElementById('pageRoom').classList.add('active'); }
         }
 
-        // 【群組房間：載入內部名單】
         function enterRoom(roomId) {
             const group = globalData.events.find(e => e.id === roomId);
             if (!group) return;
-
             document.getElementById('roomTitle').innerText = "💬 " + group.title;
             document.getElementById('roomMeta').innerHTML = `📅 時間：${group.date} ${group.time}<br>📍 地點：${group.location}`;
-            
             const attendeeMap = group.attendees || {};
             const attendeeKeys = Object.keys(attendeeMap);
             document.getElementById('roomCount').innerText = attendeeKeys.length;
-
             const attendeesDiv = document.getElementById('roomAttendees');
             attendeesDiv.innerHTML = '';
-
             if (attendeeKeys.length === 0) {
-                attendeesDiv.innerHTML = '<p style="color:#999; text-align:center; margin:0;">目前群組尚無成員，輸入姓名成為第一個加入者吧！</p>';
+                attendeesDiv.innerHTML = '<p style="color:#999; text-align:center; margin:0;">目前群組尚無成員。</p>';
             } else {
                 attendeeKeys.forEach(id => {
                     const name = attendeeMap[id];
                     const wrapper = document.createElement('div');
                     wrapper.className = 'tag-wrapper';
-                    
                     const isMe = (id === myUserId);
                     wrapper.innerHTML = `
                         <span class="tag-name">👤 ${name}</span>
-                        ${isMe ? `<button class="btn-cancel" onclick="cancelJoin('${roomId}')">❌ 取消報名</button>` : ''}
+                        ${isMe ? `<button class="btn-cancel" onclick="cancelJoin('${roomId}')">❌ 取消</button>` : ''}
                     `;
                     attendeesDiv.appendChild(wrapper);
                 });
             }
-
             document.getElementById('userNameInput').value = attendeeMap[myUserId] || '';
         }
 
-        // 【功能：報名送出】
         function submitJoin() {
             const name = document.getElementById('userNameInput').value.trim();
-            if (!name) { alert('請輸入您的名字再行報名！'); return; }
-
+            if (!name) { alert('請輸入您的名字！'); return; }
             const group = globalData.events.find(e => e.id === currentRoomId);
             if (group) {
                 if (!group.attendees) group.attendees = {};
                 group.attendees[myUserId] = name; 
                 saveData();
-                alert('成功加入群組名單！');
             }
         }
 
-        // 【功能：❌ 取消報名機制】
         function cancelJoin(roomId) {
-            if (!confirm('確定要取消在此群組的報名嗎？')) return;
-            
+            if (!confirm('確定要取消報名嗎？')) return;
             const group = globalData.events.find(e => e.id === roomId);
             if (group && group.attendees && group.attendees[myUserId]) {
                 delete group.attendees[myUserId];
                 saveData();
-                alert('已成功取消報名！');
             }
         }
 
-        function goBackToHall() {
-            switchPage('hall');
-        }
+        function goBackToHall() { switchPage('hall'); }
 
+        // 初始化載入
         loadData();
     </script>
 </body>
