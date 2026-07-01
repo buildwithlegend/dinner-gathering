@@ -109,8 +109,9 @@
         // 🔑 【管理員權限密碼】可以自行修改
         const ADMIN_SECRET_CODE = 'admin123';
 
-        // 🔒 已自動為您填入您專屬的 JSONbin 雲端金鑰
+        // 🔒 您的專屬 JSONbin 雲端金鑰與資料夾 ID（已為您固定綁定）
         const BIN_KEY = "$2a$10$lM4uTdzFpXR14Csn8B1SyOev7/JMWMTvjp4K1kc/2sKa/KtxcYzUa"; 
+        const BIN_ID = "6a447fb3da38895dfe1950b0"; 
 
         let globalData = { events: [] };
         let currentRoomId = null;
@@ -120,33 +121,17 @@
         }
         const myUserId = localStorage.getItem('userId');
 
-        // 【安全獲取專屬資料庫 ID 連結】
-        function getBinId() {
-            return localStorage.getItem('jsonbin_assigned_id');
-        }
-
         // 【從雲端下載資料】
         async function loadData() {
             updateStatus("☁️ 正在即時同步雲端名單...");
-            const currentBinId = getBinId();
             try {
-                // 如果是此設備第一次連線，自動在雲端向 JSONbin 申請分配一個專屬儲存槽
-                if (!currentBinId) {
-                    const res = await fetch("https://api.jsonbin.io/v3/b", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "X-Master-Key": BIN_KEY, "X-Bin-Private": "false" },
-                        body: JSON.stringify({ events: [] })
-                    });
-                    const d = await res.json();
-                    localStorage.setItem('jsonbin_assigned_id', d.metadata.id);
-                    globalData = { events: [] };
-                } else {
-                    const res = await fetch(`https://api.jsonbin.io/v3/b/${currentBinId}/latest`, {
-                        headers: { "X-Master-Key": BIN_KEY }
-                    });
-                    const d = await res.json();
-                    globalData = d.record || { events: [] };
-                }
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                    headers: { "X-Master-Key": BIN_KEY, "X-Bin-Meta": "false" }
+                });
+                globalData = await res.json();
+                
+                if (!globalData || !globalData.events) { globalData = { events: [] }; }
+                
                 updateStatus("✅ 雲端連線成功");
                 renderGroupList();
                 if (currentRoomId) { enterRoom(currentRoomId); }
@@ -158,10 +143,8 @@
         // 【將資料上傳存入雲端】
         async function saveData() {
             updateStatus("💾 正在同步更新至雲端...");
-            const currentBinId = getBinId();
-            if (!currentBinId) return;
             try {
-                await fetch(`https://api.jsonbin.io/v3/b/${currentBinId}`, {
+                await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json", "X-Master-Key": BIN_KEY },
                     body: JSON.stringify(globalData)
@@ -203,6 +186,7 @@
             return new Date() > new Date(`${dateStr}T${timeStr}`);
         }
 
+        // 渲染大廳列表，並加上精緻化的右上角刪除按鈕 ✕
         function renderGroupList() {
             const listDiv = document.getElementById('groupList');
             listDiv.innerHTML = '';
@@ -243,10 +227,19 @@
             } else if (userInput !== null) { alert('❌ 暗號錯誤！'); }
         }
 
+        // 切換頁面時自動拉取最新雲端狀態，保證資訊不漏接
         function switchPage(pageName, roomId = null) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            if (pageName === 'hall') { currentRoomId = null; document.getElementById('pageHall').classList.add('active'); loadData(); } 
-            else if (pageName === 'room') { currentRoomId = roomId; enterRoom(roomId); document.getElementById('pageRoom').classList.add('active'); }
+            if (pageName === 'hall') { 
+                currentRoomId = null; 
+                document.getElementById('pageHall').classList.add('active'); 
+                loadData(); 
+            } 
+            else if (pageName === 'room') { 
+                currentRoomId = roomId; 
+                enterRoom(roomId); 
+                document.getElementById('pageRoom').classList.add('active'); 
+            }
         }
 
         function enterRoom(roomId) {
@@ -299,7 +292,7 @@
 
         function goBackToHall() { switchPage('hall'); }
 
-        // 初始化載入
+        // 初始化自動載入
         loadData();
     </script>
 </body>
