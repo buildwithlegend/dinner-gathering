@@ -215,6 +215,15 @@
         let currentRoomId = null;
         let currentFilterRegion = "全部";
         let currentFilterCity = "全部";
+        let dbUnsubscribe = null; // 用來記錄監聽器的解綁函數
+
+        // 🚨 核心安全監聽：如果被資料庫拒絕讀寫（通常代表帳號被後台停用了），立刻強制踢出！
+        function handleSecurityViolation(error) {
+            if (error && (error.message.includes("permission_denied") || error.code === "PERMISSION_DENIED")) {
+                alert("🔒 偵測到您的帳號權限已變更或已被系統停用，正在將您安全登出...");
+                logout();
+            }
+        }
 
         window.handleAuth = async function() {
             const email = document.getElementById('authEmail').value.trim();
@@ -248,7 +257,10 @@
             document.getElementById('btnToggleAuth').innerText = isLoginMode ? '沒有帳號？點此切換至註冊' : '已有帳號？切換回登入';
         };
 
-        window.logout = function() { signOut(auth); };
+        window.logout = function() { 
+            if(dbUnsubscribe) { dbUnsubscribe(); dbUnsubscribe = null; } // 登出時解綁監聽
+            signOut(auth); 
+        };
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -263,11 +275,16 @@
         });
 
         function listenToDatabase() {
+            if (dbUnsubscribe) dbUnsubscribe();
+            
             const eventsRef = ref(db, 'events');
-            onValue(eventsRef, (snapshot) => {
+            // 監聽時傳入錯誤處理 callback
+            dbUnsubscribe = onValue(eventsRef, (snapshot) => {
                 globalEvents = snapshot.val() || {};
                 renderGroupList();
                 if(currentRoomId) enterRoom(currentRoomId);
+            }, (error) => {
+                handleSecurityViolation(error); // 👈 捕捉後台突然變更權限或停用的瞬間
             });
         }
 
@@ -335,11 +352,14 @@
 
             const newEventRef = push(ref(db, 'events'));
             const nameToShow = currentUser.displayName || currentUser.email.split('@')[0];
+            
             set(newEventRef, {
                 id: newEventRef.key,
                 creatorUid: currentUser.uid,
                 creatorEmail: nameToShow,
                 title: title, region: region, city: city, date: date, time: time, location: location
+            }).catch((error) => {
+                handleSecurityViolation(error); // 👈 預防防線：如果寫入時才發現被停用，立刻踢出
             });
 
             document.getElementById('eventTitle').value = '';
@@ -403,7 +423,7 @@
             if (!currentUser) { alert('請先登入帳號！'); return; }
             if (currentUser.uid === creatorUid) {
                 if (confirm('您確定要永久刪除這個由您開立的小群組嗎？')) {
-                    remove(ref(db, 'events/' + roomId));
+                    remove(ref(db, 'events/' + roomId)).catch(handleSecurityViolation);
                     alert('已成功刪除您的群組！');
                 }
                 return;
@@ -412,7 +432,7 @@
             if (adminInput === null) return;
             if (adminInput === ADMIN_MASTER_PASSWORD) {
                 if (confirm('【最高權限認證成功】確定要強制刪除此用戶開立的小群組嗎？')) {
-                    remove(ref(db, 'events/' + roomId));
+                    remove(ref(db, 'events/' + roomId)).catch(handleSecurityViolation);
                     alert('管理員已強制刪除該群組！');
                 }
             } else {
@@ -463,12 +483,12 @@
 
             if(myJoinKey) {
                 if(confirm('確定要退出此活動群組嗎？')) {
-                    remove(ref(db, `events/${currentRoomId}/attendees/${myJoinKey}`));
+                    remove(ref(db, `events/${currentRoomId}/attendees/${myJoinKey}`)).catch(handleSecurityViolation);
                 }
             } else {
                 const name = currentUser.displayName || currentUser.email.split('@')[0];
                 const newAttendeeRef = push(ref(db, `events/${currentRoomId}/attendees`));
-                set(newAttendeeRef, { uid: currentUser.uid, name: name });
+                set(newAttendeeRef, { uid: currentUser.uid, name: name }).catch(handleSecurityViolation);
             }
         };
 
