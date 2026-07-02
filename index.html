@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全台及時聚會群組系統 </title>
+    <title>全台揪團小群組系統 - 權限安全版</title>
+
+    <meta property="og:title" content="全台揪團小群組系統">
+    <meta property="og:description" content="全台即時同步揪團大廳，快來加入或開立屬於你的小群組吧！">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://buildwithlegend.github.io/dinner-gathering/">
+    <meta property="og:image" content="https://buildwithlegend.github.io/dinner-gathering/share-cover.png">
+
+    <link rel="icon" href="https://buildwithlegend.github.io/dinner-gathering/share-cover.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://buildwithlegend.github.io/dinner-gathering/share-cover.png">
+
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
         h1, h2, h3 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
@@ -37,7 +47,7 @@
         .city-tag { background: #e5e5ea; color: #333; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
         .city-tag.active { background: #34c759; color: white; }
 
-        /* 群組卡片外觀 */
+        /* 小群組卡片外觀 */
         .group-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 15px; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative; }
         .group-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #007AFF; }
         
@@ -75,7 +85,7 @@
 <body>
 
     <div id="pageAuth" class="page active">
-        <h1>🔐 全台集時聚會系統</h1>
+        <h1>🔐 全台揪團系統</h1>
         <div class="card">
             <h2 id="authTitle">帳號登入</h2>
             <div class="form-group">
@@ -100,10 +110,10 @@
 
     <div id="pageHall" class="page">
         <div class="user-info-bar">歡迎，<span id="currentUserName">使用者</span> | <a href="#" onclick="logout()" style="color: #ff3b30;">登出</a></div>
-        <h1>💬 全台即時聚會大廳</h1>
+        <h1>💬 全台即時同步揪團大廳</h1>
 
         <div class="card">
-            <h2>➕ 開立一個新群組</h2>
+            <h2>➕ 開立一個新小群組</h2>
             <div class="form-group">
                 <label>聚會主題 / 群組名稱</label>
                 <input type="text" id="eventTitle" placeholder="例如：早上8點麥當勞吃早餐">
@@ -132,10 +142,10 @@
                 <label>集合地點</label>
                 <input type="text" id="eventLocation" placeholder="例如：某某餐廳或詳細地址">
             </div>
-            <button onclick="createGroup()">發布新群組</button>
+            <button onclick="createGroup()">發布並開立小群組</button>
         </div>
 
-        <h2>📋 目前已發布的群組列表</h2>
+        <h2>📋 目前已開立的小群組列表</h2>
         
         <div class="tabs-container">
             <button class="tab-btn active" onclick="switchFilterTab('全部')">全部</button>
@@ -154,7 +164,7 @@
     <div id="pageRoom" class="page">
         <div class="card">
             <div class="room-header">
-                <div class="room-title" id="roomTitle">活動群組</div>
+                <div class="room-title" id="roomTitle">活動小群組</div>
                 <div class="group-meta" id="roomMeta">時間 / 地點</div>
             </div>
             
@@ -164,7 +174,7 @@
             <div style="margin-top:20px;">
                 <button class="btn-join" id="btnJoinOrLeave" onclick="handleToggleJoin()">我要報名參加</button>
             </div>
-            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開群組，回到大廳</button>
+            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開小群組，回到大廳</button>
         </div>
     </div>
 
@@ -189,7 +199,6 @@
         const db = getDatabase(app);
         const googleProvider = new GoogleAuthProvider();
 
-        // 🔑 自訂最高管理者刪除密碼（你可以自行修改下方引號內的字串）
         const ADMIN_MASTER_PASSWORD = "admin888delete";
 
         const regionData = {
@@ -207,7 +216,6 @@
         let currentFilterRegion = "全部";
         let currentFilterCity = "全部";
 
-        // 信箱帳密驗證邏輯
         window.handleAuth = async function() {
             const email = document.getElementById('authEmail').value.trim();
             const password = document.getElementById('authPassword').value;
@@ -373,7 +381,6 @@
                     switchPage('room', group.id);
                 };
 
-                // 🛠️ 權限修改：所有人都可以看到 ✕，但點擊後系統會驗證身分或要求管理員密碼
                 const deleteBtn = `<button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}', '${group.creatorUid}')">✕</button>`;
 
                 card.innerHTML = `
@@ -391,33 +398,25 @@
             if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">此分類目前沒有小群組。</p>';
         }
 
-        // 🔐 全新安全防線：驗證自身 Uid 或管理員密碼
         window.deleteGroup = function(event, roomId, creatorUid) {
-            event.stopPropagation(); // 阻止點擊事件穿透到卡片本身
-
+            event.stopPropagation();
             if (!currentUser) { alert('請先登入帳號！'); return; }
-
-            // 狀況一：點擊者就是這個房間的創立人 -> 直接確認後刪除
             if (currentUser.uid === creatorUid) {
-                if (confirm('您確定要永久刪除這個由您開立的群組嗎？')) {
+                if (confirm('您確定要永久刪除這個由您開立的小群組嗎？')) {
                     remove(ref(db, 'events/' + roomId));
                     alert('已成功刪除您的群組！');
                 }
                 return;
             }
-
-            // 狀況二：點擊者是別人 -> 觸發強制密碼鎖，必須輸入管理者密碼才能刪除
             const adminInput = prompt('非本人創立之群組。若您是系統管理員，請輸入「管理者刪除密碼」：');
-            
-            if (adminInput === null) return; // 使用者按取消
-
+            if (adminInput === null) return;
             if (adminInput === ADMIN_MASTER_PASSWORD) {
-                if (confirm('【最高權限認證成功】確定要強制刪除此用戶開立的群組嗎？')) {
+                if (confirm('【最高權限認證成功】確定要強制刪除此用戶開立的小群組嗎？')) {
                     remove(ref(db, 'events/' + roomId));
                     alert('管理員已強制刪除該群組！');
                 }
             } else {
-                alert('密碼錯誤！您沒有權限刪除其他人的群組。');
+                alert('密碼錯誤！您沒有權限刪除其他人的小群組。');
             }
         };
 
