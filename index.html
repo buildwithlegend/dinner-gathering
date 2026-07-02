@@ -215,14 +215,31 @@
         let currentRoomId = null;
         let currentFilterRegion = "全部";
         let currentFilterCity = "全部";
-        let dbUnsubscribe = null; // 用來記錄監聽器的解綁函數
+        let dbUnsubscribe = null;
+        let securityCheckInterval = null; // 安全檢查計時器
 
-        // 🚨 核心安全監聽：如果被資料庫拒絕讀寫（通常代表帳號被後台停用了），立刻強制踢出！
-        function handleSecurityViolation(error) {
-            if (error && (error.message.includes("permission_denied") || error.code === "PERMISSION_DENIED")) {
-                alert("🔒 偵測到您的帳號權限已變更或已被系統停用，正在將您安全登出...");
-                logout();
-            }
+        // 🚨 核心安全監聽：彈出視窗並登出
+        function triggerForceLogout() {
+            // 清除計時器，防範重複跳窗
+            if(securityCheckInterval) { clearInterval(securityCheckInterval); securityCheckInterval = null; }
+            alert("🔒 偵測到您的帳號權限已變更或已被系統停用，正在將您安全登出...");
+            logout();
+        }
+
+        // 🛡️ 背景主動巡邏員：主動向 Firebase 確認使用者當前狀態
+        function startSecurity巡邏(user) {
+            if(securityCheckInterval) clearInterval(securityCheckInterval);
+            
+            securityCheckInterval = setInterval(async () => {
+                if (!auth.currentUser) return;
+                try {
+                    // 強制刷新憑證 Token，如果後台帳號被「停用（Disabled）」，這裡會直接報錯拋出異常
+                    await auth.currentUser.getIdTokenResult(true);
+                } catch (error) {
+                    // 只要報錯（例如：user-disabled 帳號被停用），立刻執行強制踢出
+                    triggerForceLogout();
+                }
+            }, 5000); // 每 5 秒巡邏一次，兼顧效能與即時性
         }
 
         window.handleAuth = async function() {
@@ -258,7 +275,8 @@
         };
 
         window.logout = function() { 
-            if(dbUnsubscribe) { dbUnsubscribe(); dbUnsubscribe = null; } // 登出時解綁監聽
+            if(dbUnsubscribe) { dbUnsubscribe(); dbUnsubscribe = null; }
+            if(securityCheckInterval) { clearInterval(securityCheckInterval); securityCheckInterval = null; }
             signOut(auth); 
         };
 
@@ -268,8 +286,10 @@
                 document.getElementById('currentUserName').innerText = user.displayName || user.email.split('@')[0];
                 switchPage('hall');
                 listenToDatabase();
+                startSecurity巡邏(user); // 👈 登入成功，立刻啟動背景安全巡邏
             } else {
                 currentUser = null;
+                if(securityCheckInterval) { clearInterval(securityCheckInterval); securityCheckInterval = null; }
                 switchPage('auth');
             }
         });
@@ -278,13 +298,14 @@
             if (dbUnsubscribe) dbUnsubscribe();
             
             const eventsRef = ref(db, 'events');
-            // 監聽時傳入錯誤處理 callback
             dbUnsubscribe = onValue(eventsRef, (snapshot) => {
                 globalEvents = snapshot.val() || {};
                 renderGroupList();
                 if(currentRoomId) enterRoom(currentRoomId);
             }, (error) => {
-                handleSecurityViolation(error); // 👈 捕捉後台突然變更權限或停用的瞬間
+                if (error && (error.message.includes("permission_denied") || error.code === "PERMISSION_DENIED")) {
+                    triggerForceLogout();
+                }
             });
         }
 
@@ -359,7 +380,9 @@
                 creatorEmail: nameToShow,
                 title: title, region: region, city: city, date: date, time: time, location: location
             }).catch((error) => {
-                handleSecurityViolation(error); // 👈 預防防線：如果寫入時才發現被停用，立刻踢出
+                if (error && (error.message.includes("permission_denied") || error.code === "PERMISSION_DENIED")) {
+                    triggerForceLogout();
+                }
             });
 
             document.getElementById('eventTitle').value = '';
@@ -423,7 +446,7 @@
             if (!currentUser) { alert('請先登入帳號！'); return; }
             if (currentUser.uid === creatorUid) {
                 if (confirm('您確定要永久刪除這個由您開立的小群組嗎？')) {
-                    remove(ref(db, 'events/' + roomId)).catch(handleSecurityViolation);
+                    remove(ref(db, 'events/' + roomId)).catch((err) => { triggerForceLogout(); });
                     alert('已成功刪除您的群組！');
                 }
                 return;
@@ -432,7 +455,7 @@
             if (adminInput === null) return;
             if (adminInput === ADMIN_MASTER_PASSWORD) {
                 if (confirm('【最高權限認證成功】確定要強制刪除此用戶開立的小群組嗎？')) {
-                    remove(ref(db, 'events/' + roomId)).catch(handleSecurityViolation);
+                    remove(ref(db, 'events/' + roomId)).catch((err) => { triggerForceLogout(); });
                     alert('管理員已強制刪除該群組！');
                 }
             } else {
@@ -483,12 +506,12 @@
 
             if(myJoinKey) {
                 if(confirm('確定要退出此活動群組嗎？')) {
-                    remove(ref(db, `events/${currentRoomId}/attendees/${myJoinKey}`)).catch(handleSecurityViolation);
+                    remove(ref(db, `events/${currentRoomId}/attendees/${myJoinKey}`)).catch((err) => { triggerForceLogout(); });
                 }
             } else {
                 const name = currentUser.displayName || currentUser.email.split('@')[0];
                 const newAttendeeRef = push(ref(db, `events/${currentRoomId}/attendees`));
-                set(newAttendeeRef, { uid: currentUser.uid, name: name }).catch(handleSecurityViolation);
+                set(newAttendeeRef, { uid: currentUser.uid, name: name }).catch((err) => { triggerForceLogout(); });
             }
         };
 
