@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全台揪團小群組系統 - Google 登入安全版</title>
+    <title>全台揪團小群組系統 - 權限安全版</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
         h1, h2, h3 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
@@ -46,6 +46,7 @@
         .group-meta { font-size: 14px; color: #8e8e93; margin-top: 5px; }
         .city-badge { background: rgba(0, 122, 255, 0.1); color: #007AFF; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px; font-weight: bold; white-space: nowrap; }
 
+        /* ✕ 刪除按鈕外觀 */
         .btn-delete-group { 
             position: absolute; top: 12px; right: 12px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; 
             border: none; border-radius: 50%; width: 24px; height: 24px; padding: 0; font-size: 12px; 
@@ -172,7 +173,6 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // ✨ 這裡已換成 100% 精準無誤的 Firebase 正確密鑰組
         const firebaseConfig = {
             apiKey: "AIzaSyDfEnsCez2ywbt0NQ4jPBUUr8oAIcIwyA0",
             authDomain: "account-management-dashb-b4373.firebaseapp.com",
@@ -188,6 +188,9 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
         const googleProvider = new GoogleAuthProvider();
+
+        // 🔑 自訂最高管理者刪除密碼（你可以自行修改下方引號內的字串）
+        const ADMIN_MASTER_PASSWORD = "admin888delete";
 
         const regionData = {
             "北部": ["基隆市", "台北市", "新北市", "桃園市", "新竹市", "新竹縣", "宜蘭縣"],
@@ -222,7 +225,6 @@
             }
         };
 
-        // 🌐 Google 彈出視窗快速登入（會自動判斷註冊/登入）
         window.handleGoogleLogin = async function() {
             try {
                 await signInWithPopup(auth, googleProvider);
@@ -371,8 +373,8 @@
                     switchPage('room', group.id);
                 };
 
-                const deleteBtn = (currentUser && group.creatorUid === currentUser.uid) 
-                    ? `<button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}')">✕</button>` : '';
+                // 🛠️ 權限修改：所有人都可以看到 ✕，但點擊後系統會驗證身分或要求管理員密碼
+                const deleteBtn = `<button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}', '${group.creatorUid}')">✕</button>`;
 
                 card.innerHTML = `
                     ${deleteBtn}
@@ -389,10 +391,33 @@
             if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">此分類目前沒有小群組。</p>';
         }
 
-        window.deleteGroup = function(event, roomId) {
-            event.stopPropagation();
-            if (confirm('您確定要永久刪除這個您開立的小群組嗎？')) {
-                remove(ref(db, 'events/' + roomId));
+        // 🔐 全新安全防線：驗證自身 Uid 或管理員密碼
+        window.deleteGroup = function(event, roomId, creatorUid) {
+            event.stopPropagation(); // 阻止點擊事件穿透到卡片本身
+
+            if (!currentUser) { alert('請先登入帳號！'); return; }
+
+            // 狀況一：點擊者就是這個房間的創立人 -> 直接確認後刪除
+            if (currentUser.uid === creatorUid) {
+                if (confirm('您確定要永久刪除這個由您開立的小群組嗎？')) {
+                    remove(ref(db, 'events/' + roomId));
+                    alert('已成功刪除您的群組！');
+                }
+                return;
+            }
+
+            // 狀況二：點擊者是別人 -> 觸發強制密碼鎖，必須輸入管理者密碼才能刪除
+            const adminInput = prompt('非本人創立之群組。若您是系統管理員，請輸入「管理者刪除密碼」：');
+            
+            if (adminInput === null) return; // 使用者按取消
+
+            if (adminInput === ADMIN_MASTER_PASSWORD) {
+                if (confirm('【最高權限認證成功】確定要強制刪除此用戶開立的小群組嗎？')) {
+                    remove(ref(db, 'events/' + roomId));
+                    alert('管理員已強制刪除該群組！');
+                }
+            } else {
+                alert('密碼錯誤！您沒有權限刪除其他人的小群組。');
             }
         };
 
