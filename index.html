@@ -57,14 +57,14 @@
 <body>
 
     <div id="pageHall" class="page active">
-        <h1>💬 熊熊熊熊熊熊熊熊車輛出租預約</h1>
+        <h1>💬 雲端即時同步 揪團群組系統</h1>
         <div id="cloudStatus" class="loading-hint">正在連線至雲端資料庫...</div>
 
         <div class="card">
-            <h2>➕ 出租預約</h2>
+            <h2>➕ 開立群組</h2>
             <div class="form-group">
-                <label>姓名</label>
-                <input type="text" id="eventTitle" placeholder="例如：熊熊熊熊熊熊熊熊熊熊">
+                <label>聚會地點 / 活動名稱</label>
+                <input type="text" id="eventTitle" placeholder="例如：夜衝陽明山">
             </div>
             <div class="form-group">
                 <label>設定日期與時間</label>
@@ -75,12 +75,12 @@
             </div>
             <div class="form-group">
                 <label>地點</label>
-                <input type="text" id="eventLocation" placeholder="例如：熊熊熊熊熊熊熊熊的家">
+                <input type="text" id="eventLocation" placeholder="例如：陽明山">
             </div>
-            <button onclick="createGroup()">發布預約租借</button>
+            <button onclick="createGroup()">發布群組</button>
         </div>
 
-        <h2>📋 目前已發布的預約</h2>
+        <h2>📋 目前已發布的群組</h2>
         <div id="groupList"></div>
     </div>
 
