@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雲端即時同步 揪團群組系統</title>
+    <title>雲端即時同步 全台揪團小群組系統</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
         h1, h2 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
         .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #f9f9f9; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #f9f9f9; }
         .datetime-group { display: flex; gap: 10px; }
-        .datetime-group input { flex: 1; }
+        .datetime-group input, .datetime-group select { flex: 1; }
         
         .page { display: none; }
         .page.active { display: block; }
@@ -24,12 +24,24 @@
         .btn-join { background: #34c759; }
         .btn-join:hover { background: #28a745; }
 
+        /* 地區分頁選單樣式 */
+        .tabs-container { display: flex; gap: 5px; margin-bottom: 15px; background: #fff; padding: 6px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto; white-space: nowrap; }
+        .tab-btn { flex: 1; padding: 10px 15px; font-size: 14px; border: none; background: transparent; color: #8e8e93; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; transition: 0.2s; min-width: 60px; width: auto; }
+        .tab-btn.active { background: #007AFF; color: white; }
+
+        /* 縣市過濾標籤樣式 */
+        .city-tags-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; padding: 0 5px; }
+        .city-tag { background: #e5e5ea; color: #333; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        .city-tag.active { background: #34c759; color: white; }
+
+        /* 小群組卡片外觀 */
         .group-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 15px; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative; }
         .group-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #007AFF; }
         
         .group-title { font-size: 18px; font-weight: bold; color: #1c1c1e; display: flex; justify-content: space-between; align-items: center; padding-right: 35px; }
         .group-count { background: #ff9500; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; flex-shrink: 0; margin-left: 10px; }
         .group-meta { font-size: 14px; color: #8e8e93; margin-top: 5px; }
+        .city-badge { background: rgba(0, 122, 255, 0.1); color: #007AFF; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px; font-weight: bold; white-space: nowrap; }
 
         .btn-delete-group { 
             position: absolute; top: 12px; right: 12px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; 
@@ -57,14 +69,28 @@
 <body>
 
     <div id="pageHall" class="page active">
-        <h1>💬 雲端即時同步 揪團群組系統</h1>
+        <h1>💬 雲端即時同步 揪團大廳</h1>
         <div id="cloudStatus" class="loading-hint">正在連線至雲端資料庫...</div>
 
         <div class="card">
-            <h2>➕ 開立群組</h2>
+            <h2>➕ 開立一個新小群組</h2>
             <div class="form-group">
-                <label>聚會地點 / 活動名稱</label>
-                <input type="text" id="eventTitle" placeholder="例如：夜衝陽明山">
+                <label>聚會主題 / 群組名稱</label>
+                <input type="text" id="eventTitle" placeholder="例如：早上8點麥當勞吃早餐">
+            </div>
+            <div class="form-group">
+                <label>設定活動區域與縣市</label>
+                <div class="datetime-group">
+                    <select id="eventRegion" onchange="updateFormCities()">
+                        <option value="北部">北部地區</option>
+                        <option value="中部">中部地區</option>
+                        <option value="南部">南部地區</option>
+                        <option value="東部">東部地區</option>
+                        <option value="離島">離島地區</option>
+                    </select>
+                    <select id="eventCity">
+                        </select>
+                </div>
             </div>
             <div class="form-group">
                 <label>設定日期與時間</label>
@@ -74,20 +100,32 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>地點</label>
-                <input type="text" id="eventLocation" placeholder="例如：陽明山">
+                <label>集合地點</label>
+                <input type="text" id="eventLocation" placeholder="例如：某某餐廳或詳細地址">
             </div>
-            <button onclick="createGroup()">發布群組</button>
+            <button onclick="createGroup()">發布並開立小群組</button>
         </div>
 
-        <h2>📋 目前已發布的群組</h2>
+        <h2>📋 目前已開立的小群組列表</h2>
+        
+        <div class="tabs-container">
+            <button class="tab-btn active" onclick="switchFilterTab('全部')">全部</button>
+            <button class="tab-btn" onclick="switchFilterTab('北部')">北部</button>
+            <button class="tab-btn" onclick="switchFilterTab('中部')">中部</button>
+            <button class="tab-btn" onclick="switchFilterTab('南部')">南部</button>
+            <button class="tab-btn" onclick="switchFilterTab('東部')">東部</button>
+            <button class="tab-btn" onclick="switchFilterTab('離島')">離島</button>
+        </div>
+
+        <div id="cityTagsFilter" class="city-tags-container"></div>
+
         <div id="groupList"></div>
     </div>
 
     <div id="pageRoom" class="page">
         <div class="card">
             <div class="room-header">
-                <div class="room-title" id="roomTitle">活動群組</div>
+                <div class="room-title" id="roomTitle">活動小群組</div>
                 <div class="group-meta" id="roomMeta">時間 / 地點</div>
             </div>
             
@@ -101,17 +139,29 @@
                     <button class="btn-join" onclick="submitJoin()" style="width:auto; padding:0 20px;">報名送出</button>
                 </div>
             </div>
-            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開群組，回到大廳</button>
+            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開小群組，回到大廳</button>
         </div>
     </div>
 
     <script>
-        // 🔑 【管理員權限密碼】可以自行修改
+        // 🔑 【管理員權限密碼】
         const ADMIN_SECRET_CODE = 'admin123';
 
-        // 🔒 您的專屬 JSONbin 雲端金鑰與資料夾 ID（已為您固定綁定）
+        // 🔒 您的專屬 JSONbin 雲端金鑰與資料夾 ID
         const BIN_KEY = "$2a$10$lM4uTdzFpXR14Csn8B1SyOev7/JMWMTvjp4K1kc/2sKa/KtxcYzUa"; 
         const BIN_ID = "6a447fb3da38895dfe1950b0"; 
+
+        // 🗺️ 擴充至全台灣完整區域與縣市連動資料庫
+        const regionData = {
+            "北部": ["基隆市", "台北市", "新北市", "桃園市", "新竹市", "新竹縣", "宜蘭縣"],
+            "中部": ["苗栗縣", "台中市", "彰化縣", "南投縣", "雲林縣"],
+            "南部": ["嘉義市", "嘉義縣", "台南市", "高雄市", "屏東縣"],
+            "東部": ["花蓮縣", "台東縣"],
+            "離島": ["澎湖縣", "金門縣", "連江縣"]
+        };
+
+        let currentFilterRegion = "全部"; // 當前選擇的大區域分頁
+        let currentFilterCity = "全部";   // 當前選擇的縣市標籤
 
         let globalData = { events: [] };
         let currentRoomId = null;
@@ -121,6 +171,70 @@
         }
         const myUserId = localStorage.getItem('userId');
 
+        // 初始化與連動表單的縣市下拉選單
+        function updateFormCities() {
+            const region = document.getElementById('eventRegion').value;
+            const citySelect = document.getElementById('eventCity');
+            citySelect.innerHTML = '';
+            regionData[region].forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = city;
+                opt.innerText = city;
+                citySelect.appendChild(opt);
+            });
+        }
+
+        // 【大廳功能：切換區域大分頁】
+        function switchFilterTab(regionName) {
+            currentFilterRegion = regionName;
+            currentFilterCity = "全部"; // 切換大區域時，預設選取全部縣市
+
+            // 切換 CSS active 狀態
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.innerText === regionName || (regionName === "全部" && btn.innerText === "全部")) {
+                    btn.classList.add('active');
+                }
+            });
+
+            renderCityTags(); // 重新生成縣市標籤
+            renderGroupList(); // 重新過濾名單
+        }
+
+        // 【大廳功能：動態生成次級縣市過濾標籤】
+        function renderCityTags() {
+            const container = document.getElementById('cityTagsFilter');
+            container.innerHTML = '';
+
+            if (currentFilterRegion === "全部") return; // 「全部」分頁下不顯示細分標籤
+
+            // 建立一個「全部縣市」的綜合標籤
+            const allTag = document.createElement('span');
+            allTag.className = currentFilterCity === "全部" ? "city-tag active" : "city-tag";
+            allTag.innerText = "全部縣市";
+            allTag.onclick = () => {
+                currentFilterCity = "全部";
+                document.querySelectorAll('.city-tag').forEach(t => t.classList.remove('active'));
+                allTag.classList.add('active');
+                renderGroupList();
+            };
+            container.appendChild(allTag);
+
+            // 依據選擇的地區倒出專屬縣市
+            regionData[currentFilterRegion].forEach(city => {
+                const tag = document.createElement('span');
+                tag.className = currentFilterCity === city ? "city-tag active" : "city-tag";
+                tag.innerText = city;
+                tag.onclick = () => {
+                    currentFilterCity = city;
+                    document.querySelectorAll('.city-tag').forEach(t => t.classList.remove('active'));
+                    tag.classList.add('active');
+                    renderGroupList();
+                };
+                container.appendChild(tag);
+            });
+        }
+
         // 【從雲端下載資料】
         async function loadData() {
             updateStatus("☁️ 正在即時同步雲端名單...");
@@ -129,9 +243,7 @@
                     headers: { "X-Master-Key": BIN_KEY, "X-Bin-Meta": "false" }
                 });
                 globalData = await res.json();
-                
                 if (!globalData || !globalData.events) { globalData = { events: [] }; }
-                
                 updateStatus("✅ 雲端連線成功");
                 renderGroupList();
                 if (currentRoomId) { enterRoom(currentRoomId); }
@@ -163,6 +275,8 @@
 
         function createGroup() {
             const title = document.getElementById('eventTitle').value.trim();
+            const region = document.getElementById('eventRegion').value;
+            const city = document.getElementById('eventCity').value;
             const date = document.getElementById('eventDate').value;
             const time = document.getElementById('eventTime').value;
             const location = document.getElementById('eventLocation').value.trim();
@@ -170,7 +284,14 @@
             if (!title || !date || !time || !location) { alert('請填寫完整群組資料！'); return; }
 
             const newGroup = {
-                id: 'room_' + Date.now(), title: title, date: date, time: time, location: location, attendees: {} 
+                id: 'room_' + Date.now(), 
+                title: title, 
+                region: region, 
+                city: city, 
+                date: date, 
+                time: time, 
+                location: location, 
+                attendees: {} 
             };
             globalData.events.push(newGroup);
             
@@ -186,15 +307,33 @@
             return new Date() > new Date(`${dateStr}T${timeStr}`);
         }
 
-        // 渲染大廳列表，並加上精緻化的右上角刪除按鈕 ✕
+        // 引入分頁過濾機制的列表渲染
         function renderGroupList() {
             const listDiv = document.getElementById('groupList');
             listDiv.innerHTML = '';
+            
             if (!globalData.events || globalData.events.length === 0) {
                 listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">目前大廳空空如也。</p>';
                 return;
             }
-            [...globalData.events].reverse().forEach(group => {
+
+            // 開始過濾符合目前分頁與標籤的活動
+            const filteredEvents = globalData.events.filter(group => {
+                if (currentFilterRegion !== "全部" && group.region !== currentFilterRegion) {
+                    return false;
+                }
+                if (currentFilterCity !== "全部" && group.city !== currentFilterCity) {
+                    return false;
+                }
+                return true;
+            });
+
+            if (filteredEvents.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">此分類目前沒有開立的小群組。</p>';
+                return;
+            }
+
+            [...filteredEvents].reverse().forEach(group => {
                 const count = Object.keys(group.attendees || {}).length;
                 const card = document.createElement('div');
                 const expired = isEventExpired(group.date, group.time);
@@ -204,10 +343,13 @@
                     if (expired) { alert('該活動小群組已過期關閉。'); return; }
                     switchPage('room', group.id);
                 };
+
+                const cityShow = group.city ? `<span class="city-badge">${group.city}</span>` : '';
+
                 card.innerHTML = `
                     <button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}')">✕</button>
                     <div class="group-title">
-                        <span>💬 ${group.title} ${expired ? '<span style="color:#ff3b30;">[已過期]</span>' : ''}</span>
+                        <span>${cityShow} ${group.title} ${expired ? '<span style="color:#ff3b30;">[已過期]</span>' : ''}</span>
                         <span class="group-count">成員 ${count} 人</span>
                     </div>
                     <div class="group-meta">📅 時間：${group.date} ${group.time}</div>
@@ -227,25 +369,18 @@
             } else if (userInput !== null) { alert('❌ 暗號錯誤！'); }
         }
 
-        // 切換頁面時自動拉取最新雲端狀態，保證資訊不漏接
         function switchPage(pageName, roomId = null) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            if (pageName === 'hall') { 
-                currentRoomId = null; 
-                document.getElementById('pageHall').classList.add('active'); 
-                loadData(); 
-            } 
-            else if (pageName === 'room') { 
-                currentRoomId = roomId; 
-                enterRoom(roomId); 
-                document.getElementById('pageRoom').classList.add('active'); 
-            }
+            if (pageName === 'hall') { currentRoomId = null; document.getElementById('pageHall').classList.add('active'); loadData(); } 
+            else if (pageName === 'room') { currentRoomId = roomId; enterRoom(roomId); document.getElementById('pageRoom').classList.add('active'); }
         }
 
         function enterRoom(roomId) {
             const group = globalData.events.find(e => e.id === roomId);
             if (!group) return;
-            document.getElementById('roomTitle').innerText = "💬 " + group.title;
+            
+            const cityPrefix = group.city ? `[${group.city}] ` : '';
+            document.getElementById('roomTitle').innerText = "💬 " + cityPrefix + group.title;
             document.getElementById('roomMeta').innerHTML = `📅 時間：${group.date} ${group.time}<br>📍 地點：${group.location}`;
             const attendeeMap = group.attendees || {};
             const attendeeKeys = Object.keys(attendeeMap);
@@ -292,7 +427,8 @@
 
         function goBackToHall() { switchPage('hall'); }
 
-        // 初始化自動載入
+        // 初始化載入
+        updateFormCities();
         loadData();
     </script>
 </body>
