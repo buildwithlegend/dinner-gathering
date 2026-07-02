@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雲端即時同步 全台揪團小群組系統</title>
+    <title>全台揪團小群組系統 - Google 登入安全版</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
-        h1, h2 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
+        h1, h2, h3 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
         .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
@@ -21,9 +21,12 @@
         button:hover { background: #0056b3; }
         .btn-secondary { background: #8e8e93; margin-top: 10px; }
         .btn-secondary:hover { background: #636366; }
+        .btn-google { background: #fff; color: #757575; border: 1px solid #ddd; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .btn-google:hover { background: #f5f5f5; color: #333; }
+        .btn-google img { width: 18px; height: 18px; }
         .btn-join { background: #34c759; }
         .btn-join:hover { background: #28a745; }
-
+        
         /* 地區分頁選單樣式 */
         .tabs-container { display: flex; gap: 5px; margin-bottom: 15px; background: #fff; padding: 6px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto; white-space: nowrap; }
         .tab-btn { flex: 1; padding: 10px 15px; font-size: 14px; border: none; background: transparent; color: #8e8e93; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; transition: 0.2s; min-width: 60px; width: auto; }
@@ -60,18 +63,48 @@
         
         .tag-wrapper { display: inline-flex; align-items: center; background: #007AFF; color: white; border-radius: 6px; margin: 4px; padding-left: 10px; overflow: hidden; }
         .tag-name { font-size: 14px; font-weight: 500; padding: 4px 0; }
-        .btn-cancel { background: #ff3b30; color: white; border: none; padding: 6px 8px; font-size: 12px; cursor: pointer; font-weight: bold; margin-left: 8px; transition: 0.2s; }
-        .btn-cancel:hover { background: #d7261e; }
         
-        .loading-hint { text-align: center; color: #8e8e93; font-size: 14px; margin-bottom: 10px; font-weight: bold; }
+        .user-info-bar { text-align: right; font-size: 12px; color: #666; margin-bottom: 10px; }
+        .divider { display: flex; align-items: center; text-align: center; color: #ccc; margin: 15px 0; font-size: 12px; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #eee; }
+        .divider:not(:empty)::before { margin-right: .25em; }
+        .divider:not(:empty)::after { margin-left: .25em; }
     </style>
 </head>
 <body>
 
-    <div id="pageHall" class="page active">
-        <h1>💬 雲端即時同步 揪團大廳</h1>
-        <div id="cloudStatus" class="loading-hint">正在連線至雲端資料庫...</div>
+    <!-- ================= 頁面零：登入 / 註冊頁面 ================= -->
+    <div id="pageAuth" class="page active">
+        <h1>🔐 全台揪團系統</h1>
+        <div class="card">
+            <h2 id="authTitle">帳號登入</h2>
+            <div class="form-group">
+                <label>電子信箱 Email</label>
+                <input type="email" id="authEmail" placeholder="example@email.com">
+            </div>
+            <div class="form-group">
+                <label>密碼 Password</label>
+                <input type="password" id="authPassword" placeholder="請輸入至少 6 位數密碼">
+            </div>
+            <button id="btnPrimaryAuth" onclick="handleAuth()">安全登入</button>
+            <button class="btn-secondary" id="btnToggleAuth" onclick="toggleAuthMode()">沒有帳號？點此切換至註冊</button>
+            
+            <div class="divider">或</div>
+            
+            <!-- 🌐 新增的 Google 快速登入按鈕 -->
+            <button class="btn-google" onclick="handleGoogleLogin()">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo">
+                使用 Google 帳號快速登入
+            </button>
+        </div>
+    </div>
 
+    <!-- ================= 頁面一：大廳 (總列表) ================= -->
+    <div id="pageHall" class="page">
+        <div class="user-info-bar">歡迎，<span id="currentUserName">使用者</span> | <a href="#" onclick="logout()" style="color: #ff3b30;">登出</a></div>
+        <h1>💬 全台即時同步揪團大廳</h1>
+
+        <!-- 開立群組表單 -->
         <div class="card">
             <h2>➕ 開立一個新小群組</h2>
             <div class="form-group">
@@ -88,8 +121,7 @@
                         <option value="東部">東部地區</option>
                         <option value="離島">離島地區</option>
                     </select>
-                    <select id="eventCity">
-                        </select>
+                    <select id="eventCity"></select>
                 </div>
             </div>
             <div class="form-group">
@@ -108,6 +140,7 @@
 
         <h2>📋 目前已開立的小群組列表</h2>
         
+        <!-- 🗺️ 地區切換分頁標籤 -->
         <div class="tabs-container">
             <button class="tab-btn active" onclick="switchFilterTab('全部')">全部</button>
             <button class="tab-btn" onclick="switchFilterTab('北部')">北部</button>
@@ -117,11 +150,13 @@
             <button class="tab-btn" onclick="switchFilterTab('離島')">離島</button>
         </div>
 
+        <!-- 📍 縣市過濾小標籤 -->
         <div id="cityTagsFilter" class="city-tags-container"></div>
 
         <div id="groupList"></div>
     </div>
 
+    <!-- ================= 頁面二：獨立小群組房間 ================= -->
     <div id="pageRoom" class="page">
         <div class="card">
             <div class="room-header">
@@ -132,83 +167,135 @@
             <h3>👥 目前群組參加人數：<span id="roomCount" style="color:#ff9500; font-size:22px;">0</span> 人</h3>
             <div class="attendee-list" id="roomAttendees"></div>
 
-            <div class="form-group" style="margin-top:20px;">
-                <label>填寫您的姓名加入此群組：</label>
-                <div class="datetime-group">
-                    <input type="text" id="userNameInput" placeholder="請輸入姓名">
-                    <button class="btn-join" onclick="submitJoin()" style="width:auto; padding:0 20px;">報名送出</button>
-                </div>
+            <div style="margin-top:20px;">
+                <button class="btn-join" id="btnJoinOrLeave" onclick="handleToggleJoin()">我要報名參加</button>
             </div>
             <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開小群組，回到大廳</button>
         </div>
     </div>
 
-    <script>
-        // 🔑 【管理員權限密碼】
-        const ADMIN_SECRET_CODE = 'admin123';
+    <!-- ================= Firebase 雲端核心邏輯 ================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // 🔒 您的專屬 JSONbin 雲端金鑰與資料夾 ID
-        const BIN_KEY = "$2a$10$lM4uTdzFpXR14Csn8B1SyOev7/JMWMTvjp4K1kc/2sKa/KtxcYzUa"; 
-        const BIN_ID = "6a447fb3da38895dfe1950b0"; 
+        const firebaseConfig = {
+            apiKey: "AIzaSyDFEnsCez2ywbt0NQ4jPBUUr8oAIcIwyA0",
+            authDomain: "account-management-dashb-b4373.firebaseapp.com",
+            projectId: "account-management-dashb-b4373",
+            storageBucket: "account-management-dashb-b4373.appspot.com",
+            messagingSenderId: "294482078870",
+            appId: "1:294482078870:web:f75ff744e13f8f5c5f26b7",
+            measurementId: "G-9JHT96DE94",
+            databaseURL: "https://account-management-dashb-b4373-default-rtdb.firebaseio.com/"
+        };
 
-        // 🗺️ 擴充至全台灣完整區域與縣市連動資料庫
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const googleProvider = new GoogleAuthProvider();
+
         const regionData = {
             "北部": ["基隆市", "台北市", "新北市", "桃園市", "新竹市", "新竹縣", "宜蘭縣"],
-            "中部": ["苗栗縣", "台中市", "彰化縣", "南投縣", "雲林縣"],
+            "中部": ["苗栗縣", "台中市", "彰化縣", "投投縣", "雲林縣"],
             "南部": ["嘉義市", "嘉義縣", "台南市", "高雄市", "屏東縣"],
             "東部": ["花蓮縣", "台東縣"],
             "離島": ["澎湖縣", "金門縣", "連江縣"]
         };
 
-        let currentFilterRegion = "全部"; // 當前選擇的大區域分頁
-        let currentFilterCity = "全部";   // 當前選擇的縣市標籤
-
-        let globalData = { events: [] };
+        let isLoginMode = true; 
+        let currentUser = null;
+        let globalEvents = {};
         let currentRoomId = null;
+        let currentFilterRegion = "全部";
+        let currentFilterCity = "全部";
 
-        if (!localStorage.getItem('userId')) {
-            localStorage.setItem('userId', 'user_' + Math.random().toString(36).substr(2, 9));
+        // 信箱帳密驗證邏輯
+        window.handleAuth = async function() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            if(!email || !password) { alert('請完整填寫信箱與密碼！'); return; }
+
+            try {
+                if(isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    alert('註冊成功，已自動登入！');
+                }
+            } catch(error) {
+                alert('驗證失敗: ' + error.message);
+            }
+        };
+
+        // 🌐 新增的 Google 彈出視窗登入邏輯
+        window.handleGoogleLogin = async function() {
+            try {
+                await signInWithPopup(auth, googleProvider);
+            } catch (error) {
+                alert('Google 登入失敗: ' + error.message);
+            }
+        };
+
+        window.toggleAuthMode = function() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').innerText = isLoginMode ? '帳號登入' : '帳號註冊';
+            document.getElementById('btnPrimaryAuth').innerText = isLoginMode ? '安全登入' : '立即註冊';
+            document.getElementById('btnToggleAuth').innerText = isLoginMode ? '沒有帳號？點此切換至註冊' : '已有帳號？切換回登入';
+        };
+
+        window.logout = function() { signOut(auth); };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                // 如果是 Google 登入就優先顯示名字(displayName)，否則切信箱前綴
+                document.getElementById('currentUserName').innerText = user.displayName || user.email.split('@')[0];
+                switchPage('hall');
+                listenToDatabase();
+            } else {
+                currentUser = null;
+                switchPage('auth');
+            }
+        });
+
+        function listenToDatabase() {
+            const eventsRef = ref(db, 'events');
+            onValue(eventsRef, (snapshot) => {
+                globalEvents = snapshot.val() || {};
+                renderGroupList();
+                if(currentRoomId) enterRoom(currentRoomId);
+            });
         }
-        const myUserId = localStorage.getItem('userId');
 
-        // 初始化與連動表單的縣市下拉選單
-        function updateFormCities() {
+        window.updateFormCities = function() {
             const region = document.getElementById('eventRegion').value;
             const citySelect = document.getElementById('eventCity');
             citySelect.innerHTML = '';
             regionData[region].forEach(city => {
                 const opt = document.createElement('option');
-                opt.value = city;
-                opt.innerText = city;
+                opt.value = city; opt.innerText = city;
                 citySelect.appendChild(opt);
             });
-        }
+        };
 
-        // 【大廳功能：切換區域大分頁】
-        function switchFilterTab(regionName) {
+        window.switchFilterTab = function(regionName) {
             currentFilterRegion = regionName;
-            currentFilterCity = "全部"; // 切換大區域時，預設選取全部縣市
-
-            // 切換 CSS active 狀態
+            currentFilterCity = "全部";
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('active');
-                if(btn.innerText === regionName || (regionName === "全部" && btn.innerText === "全部")) {
-                    btn.classList.add('active');
-                }
+                if(btn.innerText === regionName) btn.classList.add('active');
             });
+            renderCityTags();
+            renderGroupList();
+        };
 
-            renderCityTags(); // 重新生成縣市標籤
-            renderGroupList(); // 重新過濾名單
-        }
-
-        // 【大廳功能：動態生成次級縣市過濾標籤】
         function renderCityTags() {
             const container = document.getElementById('cityTagsFilter');
             container.innerHTML = '';
+            if (currentFilterRegion === "全部") return;
 
-            if (currentFilterRegion === "全部") return; // 「全部」分頁下不顯示細分標籤
-
-            // 建立一個「全部縣市」的綜合標籤
             const allTag = document.createElement('span');
             allTag.className = currentFilterCity === "全部" ? "city-tag active" : "city-tag";
             allTag.innerText = "全部縣市";
@@ -220,7 +307,6 @@
             };
             container.appendChild(allTag);
 
-            // 依據選擇的地區倒出專屬縣市
             regionData[currentFilterRegion].forEach(city => {
                 const tag = document.createElement('span');
                 tag.className = currentFilterCity === city ? "city-tag active" : "city-tag";
@@ -235,45 +321,7 @@
             });
         }
 
-        // 【從雲端下載資料】
-        async function loadData() {
-            updateStatus("☁️ 正在即時同步雲端名單...");
-            try {
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                    headers: { "X-Master-Key": BIN_KEY, "X-Bin-Meta": "false" }
-                });
-                globalData = await res.json();
-                if (!globalData || !globalData.events) { globalData = { events: [] }; }
-                updateStatus("✅ 雲端連線成功");
-                renderGroupList();
-                if (currentRoomId) { enterRoom(currentRoomId); }
-            } catch(e) {
-                updateStatus("❌ 雲端連線失敗，請稍後重試");
-            }
-        }
-
-        // 【將資料上傳存入雲端】
-        async function saveData() {
-            updateStatus("💾 正在同步更新至雲端...");
-            try {
-                await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json", "X-Master-Key": BIN_KEY },
-                    body: JSON.stringify(globalData)
-                });
-                updateStatus("✅ 雲端資料已同步");
-                renderGroupList();
-                if (currentRoomId) { enterRoom(currentRoomId); }
-            } catch(e) {
-                updateStatus("❌ 儲存失敗");
-            }
-        }
-
-        function updateStatus(text) {
-            document.getElementById('cloudStatus').innerText = text;
-        }
-
-        function createGroup() {
+        window.createGroup = function() {
             const title = document.getElementById('eventTitle').value.trim();
             const region = document.getElementById('eventRegion').value;
             const city = document.getElementById('eventCity').value;
@@ -283,153 +331,142 @@
 
             if (!title || !date || !time || !location) { alert('請填寫完整群組資料！'); return; }
 
-            const newGroup = {
-                id: 'room_' + Date.now(), 
-                title: title, 
-                region: region, 
-                city: city, 
-                date: date, 
-                time: time, 
-                location: location, 
-                attendees: {} 
-            };
-            globalData.events.push(newGroup);
-            
+            const newEventRef = push(ref(db, 'events'));
+            const nameToShow = currentUser.displayName || currentUser.email.split('@')[0];
+            set(newEventRef, {
+                id: newEventRef.key,
+                creatorUid: currentUser.uid,
+                creatorEmail: nameToShow,
+                title: title, region: region, city: city, date: date, time: time, location: location
+            });
+
             document.getElementById('eventTitle').value = '';
             document.getElementById('eventDate').value = '';
             document.getElementById('eventTime').value = '';
             document.getElementById('eventLocation').value = '';
-            saveData();
-        }
+        };
 
         function isEventExpired(dateStr, timeStr) {
             if (!dateStr || !timeStr) return false;
             return new Date() > new Date(`${dateStr}T${timeStr}`);
         }
 
-        // 引入分頁過濾機制的列表渲染
         function renderGroupList() {
             const listDiv = document.getElementById('groupList');
             listDiv.innerHTML = '';
             
-            if (!globalData.events || globalData.events.length === 0) {
+            const eventKeys = Object.keys(globalEvents);
+            if (eventKeys.length === 0) {
                 listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">目前大廳空空如也。</p>';
                 return;
             }
 
-            // 開始過濾符合目前分頁與標籤的活動
-            const filteredEvents = globalData.events.filter(group => {
-                if (currentFilterRegion !== "全部" && group.region !== currentFilterRegion) {
-                    return false;
-                }
-                if (currentFilterCity !== "全部" && group.city !== currentFilterCity) {
-                    return false;
-                }
-                return true;
-            });
+            let hasContent = false;
+            eventKeys.reverse().forEach(key => {
+                const group = globalEvents[key];
+                if (currentFilterRegion !== "全部" && group.region !== currentFilterRegion) return;
+                if (currentFilterCity !== "全部" && group.city !== currentFilterCity) return;
 
-            if (filteredEvents.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">此分類目前沒有開立的小群組。</p>';
-                return;
-            }
-
-            [...filteredEvents].reverse().forEach(group => {
-                const count = Object.keys(group.attendees || {}).length;
+                hasContent = true;
+                const count = group.attendees ? Object.keys(group.attendees).length : 0;
                 const card = document.createElement('div');
                 const expired = isEventExpired(group.date, group.time);
                 card.className = expired ? 'group-card expired' : 'group-card';
+                
                 card.onclick = (e) => {
                     if (e.target.tagName === 'BUTTON') return;
-                    if (expired) { alert('該活動小群組已過期關閉。'); return; }
+                    if (expired) { alert('該活動已過期關閉。'); return; }
                     switchPage('room', group.id);
                 };
 
-                const cityShow = group.city ? `<span class="city-badge">${group.city}</span>` : '';
+                const deleteBtn = (currentUser && group.creatorUid === currentUser.uid) 
+                    ? `<button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}')">✕</button>` : '';
 
                 card.innerHTML = `
-                    <button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}')">✕</button>
+                    ${deleteBtn}
                     <div class="group-title">
-                        <span>${cityShow} ${group.title} ${expired ? '<span style="color:#ff3b30;">[已過期]</span>' : ''}</span>
+                        <span><span class="city-badge">${group.city}</span>${group.title}</span>
                         <span class="group-count">成員 ${count} 人</span>
                     </div>
-                    <div class="group-meta">📅 時間：${group.date} ${group.time}</div>
+                    <div class="group-meta">📅 時間：${group.date} ${group.time} | 👤 主辦：${group.creatorEmail}</div>
                     <div class="group-meta">📍 地點：${group.location}</div>
                 `;
                 listDiv.appendChild(card);
             });
+
+            if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">此分類目前沒有小群組。</p>';
         }
 
-        function deleteGroup(event, roomId) {
+        window.deleteGroup = function(event, roomId) {
             event.stopPropagation();
-            if (!confirm('您確定要永久刪除這個小群組嗎？')) return;
-            const userInput = prompt('請輸入管理員暗號：');
-            if (userInput === ADMIN_SECRET_CODE) {
-                globalData.events = globalData.events.filter(e => e.id !== roomId);
-                saveData();
-            } else if (userInput !== null) { alert('❌ 暗號錯誤！'); }
-        }
-
-        function switchPage(pageName, roomId = null) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            if (pageName === 'hall') { currentRoomId = null; document.getElementById('pageHall').classList.add('active'); loadData(); } 
-            else if (pageName === 'room') { currentRoomId = roomId; enterRoom(roomId); document.getElementById('pageRoom').classList.add('active'); }
-        }
+            if (confirm('您確定要永久刪除這個您開立的小群組嗎？')) {
+                remove(ref(db, 'events/' + roomId));
+            }
+        };
 
         function enterRoom(roomId) {
-            const group = globalData.events.find(e => e.id === roomId);
-            if (!group) return;
-            
-            const cityPrefix = group.city ? `[${group.city}] ` : '';
-            document.getElementById('roomTitle').innerText = "💬 " + cityPrefix + group.title;
+            const group = globalEvents[roomId];
+            if (!group) { goBackToHall(); return; }
+
+            document.getElementById('roomTitle').innerText = `💬 [${group.city}] ${group.title}`;
             document.getElementById('roomMeta').innerHTML = `📅 時間：${group.date} ${group.time}<br>📍 地點：${group.location}`;
-            const attendeeMap = group.attendees || {};
-            const attendeeKeys = Object.keys(attendeeMap);
+            
+            const attendees = group.attendees || {};
+            const attendeeKeys = Object.keys(attendees);
             document.getElementById('roomCount').innerText = attendeeKeys.length;
+            
             const attendeesDiv = document.getElementById('roomAttendees');
             attendeesDiv.innerHTML = '';
-            if (attendeeKeys.length === 0) {
-                attendeesDiv.innerHTML = '<p style="color:#999; text-align:center; margin:0;">目前群組尚無成員。</p>';
+            
+            let isAmIIn = false;
+            attendeeKeys.forEach(key => {
+                if(attendees[key].uid === currentUser.uid) isAmIIn = true;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'tag-wrapper';
+                wrapper.innerHTML = `<span class="tag-name" style="padding-right:10px;">👤 ${attendees[key].name}</span>`;
+                attendeesDiv.appendChild(wrapper);
+            });
+
+            if(attendeeKeys.length === 0) attendeesDiv.innerHTML = '<p style="color:#999; text-align:center; margin:0;">目前群組尚無成員。</p>';
+
+            const btn = document.getElementById('btnJoinOrLeave');
+            if(isAmIIn) {
+                btn.innerText = "❌ 我要退出此群組";
+                btn.style.background = "#ff3b30";
             } else {
-                attendeeKeys.forEach(id => {
-                    const name = attendeeMap[id];
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'tag-wrapper';
-                    const isMe = (id === myUserId);
-                    wrapper.innerHTML = `
-                        <span class="tag-name">👤 ${name}</span>
-                        ${isMe ? `<button class="btn-cancel" onclick="cancelJoin('${roomId}')">❌ 取消</button>` : ''}
-                    `;
-                    attendeesDiv.appendChild(wrapper);
-                });
-            }
-            document.getElementById('userNameInput').value = attendeeMap[myUserId] || '';
-        }
-
-        function submitJoin() {
-            const name = document.getElementById('userNameInput').value.trim();
-            if (!name) { alert('請輸入您的名字！'); return; }
-            const group = globalData.events.find(e => e.id === currentRoomId);
-            if (group) {
-                if (!group.attendees) group.attendees = {};
-                group.attendees[myUserId] = name; 
-                saveData();
+                btn.innerText = "➕ 我要報名參加";
+                btn.style.background = "#34c759";
             }
         }
 
-        function cancelJoin(roomId) {
-            if (!confirm('確定要取消報名嗎？')) return;
-            const group = globalData.events.find(e => e.id === roomId);
-            if (group && group.attendees && group.attendees[myUserId]) {
-                delete group.attendees[myUserId];
-                saveData();
+        window.handleToggleJoin = function() {
+            const group = globalEvents[currentRoomId];
+            if(!group) return;
+            const attendees = group.attendees || {};
+            const myJoinKey = Object.keys(attendees).find(k => attendees[k].uid === currentUser.uid);
+
+            if(myJoinKey) {
+                if(confirm('確定要退出此活動群組嗎？')) {
+                    remove(ref(db, `events/${currentRoomId}/attendees/${myJoinKey}`));
+                }
+            } else {
+                const name = currentUser.displayName || currentUser.email.split('@')[0];
+                const newAttendeeRef = push(ref(db, `events/${currentRoomId}/attendees`));
+                set(newAttendeeRef, { uid: currentUser.uid, name: name });
             }
+        };
+
+        window.goBackToHall = function() { switchPage('hall'); };
+
+        function switchPage(pageName, roomId = null) {
+            currentRoomId = roomId;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            if(pageName === 'auth') document.getElementById('pageAuth').classList.add('active');
+            if(pageName === 'hall') { document.getElementById('pageHall').classList.add('active'); renderGroupList(); }
+            if(pageName === 'room') { document.getElementById('pageRoom').classList.add('active'); enterRoom(roomId); }
         }
 
-        function goBackToHall() { switchPage('hall'); }
-
-        // 初始化載入
         updateFormCities();
-        loadData();
     </script>
 </body>
 </html>
