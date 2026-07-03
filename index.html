@@ -22,7 +22,6 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1100px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
         h1, h2, h3 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
         
-        /* 雙欄主佈局容器 */
         .main-container { display: flex; gap: 20px; align-items: flex-start; margin-top: 20px; }
         .left-col { flex: 4; min-width: 320px; } 
         .right-col { flex: 5; min-width: 350px; } 
@@ -32,18 +31,15 @@
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #f9f9f9; font-family: inherit; }
         
-        /* 欄位並排樣式 */
         .row-group { display: flex; gap: 10px; margin-bottom: 10px; }
         .row-group select, .row-group input { flex: 1; }
         
-        /* 單選鈕樣式 (大分類/狀態) */
         .radio-tile-group { display: flex; gap: 8px; margin-top: 5px; }
         .radio-label { flex: 1; text-align: center; background: #f2f2f7; padding: 10px 5px; border-radius: 8px; cursor: pointer; font-weight: bold; border: 2px solid transparent; transition: 0.2s; font-size: 13px; white-space: nowrap; }
         .radio-label input { display: none; }
         .radio-label.active { background: #007AFF; color: white; border-color: #0056b3; }
         .radio-label.active-status { background: #34c759; color: white; border-color: #24933e; }
 
-        /* 動態產品欄位樣式 */
         .product-item { display: flex; gap: 8px; margin-bottom: 8px; }
         .btn-remove-product { background: #ff3b30; color: white; border: none; border-radius: 8px; width: 40px; cursor: pointer; font-weight: bold; }
         .btn-remove-product:hover { background: #cc2419; }
@@ -53,7 +49,6 @@
         .page { display: none; }
         .page.active { display: block; }
         
-        /* 登入頁專用置中限制 */
         #pageAuth .card { max-width: 400px; margin: 60px auto 0 auto; }
 
         button { background: #007AFF; color: white; border: none; padding: 12px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
@@ -61,13 +56,11 @@
         .btn-secondary { background: #8e8e93; margin-top: 10px; }
         .btn-secondary:hover { background: #636366; }
         
-        /* 大廳過濾區外觀 */
         .filter-section { background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .tabs-container { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap; padding-bottom: 3px; }
         .tab-btn { padding: 8px 12px; font-size: 13px; border: none; background: #f2f2f7; color: #8e8e93; border-radius: 8px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
         .tab-btn.active { background: #007AFF; color: white; }
 
-        /* 工作行程卡片外觀 */
         .group-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 15px; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative; }
         .group-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #007AFF; }
         
@@ -85,13 +78,21 @@
         .product-tag { background: #e5e5ea; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 4px; display: inline-block; margin-top: 4px; font-weight: 500; }
         .rework-box { background: #fff2f2; border-left: 3px solid #ff3b30; padding: 8px; margin-top: 6px; border-radius: 4px; font-size: 13px; color: #c0392b; }
 
-        /* ✕ 刪除按鈕 */
         .btn-delete-group { 
             position: absolute; top: 12px; right: 12px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; 
             border: none; border-radius: 50%; width: 24px; height: 24px; padding: 0; font-size: 12px; 
             font-weight: bold; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; 
         }
         .btn-delete-group:hover { background: #ff3b30; color: white; }
+
+        /* 🗑️ 資源回收桶專用外觀 */
+        .trash-section { background: #fdf2f2; border: 2px dashed #ffa3a3; padding: 20px; border-radius: 16px; margin-top: 30px; }
+        .trash-card { border: 1px solid #ffcccc; background: #fffcfc; cursor: default; }
+        .trash-card:hover { transform: none; box-shadow: none; border-color: #ffcccc; }
+        .trash-ops { margin-top: 10px; display: flex; gap: 8px; }
+        .trash-ops button { padding: 6px 10px; font-size: 12px; width: auto; }
+        .btn-restore { background: #34c759; } .btn-restore:hover { background: #24933e; }
+        .btn-kill { background: #ff3b30; } .btn-kill:hover { background: #cc2419; }
 
         .room-header { border-bottom: 2px solid #007AFF; padding-bottom: 10px; margin-bottom: 15px; }
         .room-title { font-size: 22px; font-weight: bold; color: #007AFF; }
@@ -147,6 +148,11 @@
                     </div>
 
                     <div class="form-group">
+                        <label>工作發布人員 (系統自動鎖定)</label>
+                        <input type="text" id="displayCreator" readonly style="background: #e5e5ea; color: #555; font-weight: bold;">
+                    </div>
+
+                    <div class="form-group">
                         <label>客戶名稱</label>
                         <input type="text" id="customerName" placeholder="例如：陳先生 - 客廳改建案">
                     </div>
@@ -189,11 +195,11 @@
                     <div id="reworkSection" style="display: none; background: #fff2f2; padding: 12px; border-radius: 8px; border: 1px solid #ffcccc; margin-bottom: 14px;">
                         <div class="form-group">
                             <label style="color: #ff3b30;">⚠️ 二工原因說明</label>
-                            <textarea id="reworkReason" rows="2" placeholder="請輸入造成二次施工的原因（例如：尺寸不合、五金缺件）"></textarea>
+                            <textarea id="reworkReason" rows="2" placeholder="請輸入造成二次施工的原因"></textarea>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
                             <label style="color: #ff3b30;">👤 主要出錯人員/單位</label>
-                            <input type="text" id="errorWorker" placeholder="例如：丈量工班、廠端製造、原出貨人員">
+                            <input type="text" id="errorWorker" placeholder="例如：丈量工班、廠端製造">
                         </div>
                     </div>
 
@@ -218,7 +224,7 @@
                 <div class="filter-section">
                     <div class="row-group">
                         <select id="filterType" onchange="renderGroupList()">
-                            <option value="全部">全部大分類 (丈量/安裝/二工)</option>
+                            <option value="全部">全部大分類</option>
                             <option value="丈量">📐 僅看 丈量</option>
                             <option value="安裝">🔧 僅看 安裝</option>
                             <option value="二工">⚠️ 僅看 二工</option>
@@ -252,7 +258,11 @@
 
                 <div id="groupList"></div>
             </div>
+        </div>
 
+        <div class="trash-section">
+            <h2>🗑️ 資源回收桶 <span style="font-size:14px; font-weight:normal; color:#e74c3c;">(僅保留10天，過期自動永久刪除)</span></h2>
+            <div id="trashList"></div>
         </div>
     </div>
 
@@ -288,7 +298,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 🔒 【四組限定帳號密碼設定清單】 (帳號密碼皆為 8 碼同數)
         const ALLOWED_USERS = {
             "20081002": { password: "20081002", name: "孫" },
             "20250401": { password: "20250401", name: "WU" },
@@ -333,9 +342,11 @@
 
         let currentUser = null;
         let globalEvents = {};
+        let globalTrash = {};
         let currentRoomId = null;
         let currentFilterRegion = "全部";
         let dbUnsubscribe = null;
+        let dbTrashUnsubscribe = null;
 
         window.handleInternalLogin = function() {
             const account = document.getElementById('authAccount').value.trim();
@@ -353,6 +364,7 @@
 
         function loginSuccessAction() {
             document.getElementById('currentUserName').innerText = currentUser.name;
+            document.getElementById('displayCreator').value = currentUser.name; // 連動發布者欄位
             switchPage('hall');
             listenToDatabase();
         }
@@ -369,6 +381,7 @@
             sessionStorage.clear();
             currentUser = null;
             if(dbUnsubscribe) { dbUnsubscribe(); dbUnsubscribe = null; }
+            if(dbTrashUnsubscribe) { dbTrashUnsubscribe(); dbTrashUnsubscribe = null; }
             switchPage('auth');
         };
 
@@ -447,6 +460,13 @@
                 renderGroupList();
                 if(currentRoomId) enterRoom(currentRoomId);
             });
+
+            if (dbTrashUnsubscribe) dbTrashUnsubscribe();
+            dbTrashUnsubscribe = onValue(ref(db, 'trash'), (snapshot) => {
+                globalTrash = snapshot.val() || {};
+                checkAndCleanExpiredTrash();
+                renderTrashList();
+            });
         }
 
         window.createJobSchedule = function() {
@@ -482,7 +502,7 @@
             set(newJobRef, {
                 id: newJobRef.key,
                 creatorUid: currentUser.uid,
-                creatorName: currentUser.name,
+                creatorName: currentUser.name, // 自動鎖定發布人為當前登入者
                 jobType: jobType,
                 customerName: customerName,
                 region: region, city: city, district: district, detailedAddress: detailedAddress,
@@ -579,7 +599,7 @@
                         <span class="${statusClass}">${job.jobStatus}</span>
                     </div>
                     <div class="group-meta">
-                        📅 預定時間：<b>${job.date} ${job.time}</b><br>
+                        📅 預定時間：<b>${job.date} ${job.time}</b> (發布人: ${job.creatorName || '未指定'})<br>
                         📍 派工地點：<span class="loc-badge">${job.city || ''}${job.district || ''}</span>${job.detailedAddress || ''}<br>
                         👷 現場人員：<b>${job.workerName}</b>
                     </div>
@@ -591,12 +611,98 @@
             if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">沒有符合篩選條件的工作排程。</p>';
         }
 
+        // 🗑️ 刪除排程：轉移至回收桶，並帶入刪除者資訊
         window.deleteJobScheduleServer = function(event, jobId) {
             event.stopPropagation();
-            if (confirm('確認是否要刪除此工作排程項目？')) {
-                remove(ref(db, 'jobs/' + jobId));
+            if (confirm('確認是否要把此工作排程移到回收桶？')) {
+                const jobData = globalEvents[jobId];
+                if (!jobData) return;
+
+                // 注入刪除數據
+                jobData.deletedBy = currentUser.name;
+                jobData.deletedAt = Date.now();
+
+                // 寫入回收桶並移除線上行程
+                set(ref(db, 'trash/' + jobId), jobData).then(() => {
+                    remove(ref(db, 'jobs/' + jobId));
+                });
             }
         };
+
+        // 📋 渲染資源回收桶列表
+        function renderTrashList() {
+            const trashDiv = document.getElementById('trashList');
+            trashDiv.innerHTML = '';
+            
+            const keys = Object.keys(globalTrash);
+            if (keys.length === 0) {
+                trashDiv.innerHTML = '<p style="color:#999; text-align:center; padding:10px; margin:0;">回收桶目前空空如也。</p>';
+                return;
+            }
+
+            keys.reverse().forEach(key => {
+                const item = globalTrash[key];
+                
+                // 計算剩餘天數 (10天限制)
+                const msPassed = Date.now() - item.deletedAt;
+                const daysLeft = Math.max(0, Math.ceil((10 * 24 * 60 * 60 * 1000 - msPassed) / (1000 * 60 * 60 * 24)));
+
+                const card = document.createElement('div');
+                card.className = 'group-card trash-card';
+
+                card.innerHTML = `
+                    <div class="group-title">
+                        <span style="color:#777;"><del>【${item.jobType}】${item.customerName}</del></span>
+                        <span class="status-badge" style="background:#e74c3c;">⏳ 剩餘 ${daysLeft} 天自動清除</span>
+                    </div>
+                    <div class="group-meta" style="color:#777;">
+                        📅 原預定：${item.date} ${item.time} | 👷 人員：${item.workerName}<br>
+                        🛑 原始發布：<b>${item.creatorName || '未知'}</b> | 🔴 <b style="color:#d63031;">由【${item.deletedBy || '未知'}】刪除</b>
+                    </div>
+                    <div class="trash-ops">
+                        <button class="btn-restore" onclick="restoreFromTrash('${item.id}')">🔄 還原行程</button>
+                        <button class="btn-kill" onclick="permanentlyDeleteTrash('${item.id}')">💥 永久刪除</button>
+                    </div>
+                `;
+                trashDiv.appendChild(card);
+            });
+        }
+
+        // 🔄 還原行程
+        window.restoreFromTrash = function(jobId) {
+            const data = globalTrash[jobId];
+            if (!data) return;
+
+            // 清除刪除標記並還原
+            delete data.deletedBy;
+            delete data.deletedAt;
+
+            set(ref(db, 'jobs/' + jobId), data).then(() => {
+                remove(ref(db, 'trash/' + jobId));
+                alert('行程已成功還原回大廳！');
+            });
+        };
+
+        // 💥 主動永久刪除
+        window.permanentlyDeleteTrash = function(jobId) {
+            if (confirm('警告：此操作將永久銷毀資料，無法再復原！是否確認刪除？')) {
+                remove(ref(db, 'trash/' + jobId));
+            }
+        };
+
+        // ⏳ 自動排程：過期（超過10天）自動永久清除
+        function checkAndCleanExpiredTrash() {
+            const keys = Object.keys(globalTrash);
+            const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+
+            keys.forEach(key => {
+                const item = globalTrash[key];
+                if (item.deletedAt && (now - item.deletedAt > tenDaysMs)) {
+                    remove(ref(db, 'trash/' + key)); // 超過10天，直接在後台抹除
+                }
+            });
+        }
 
         function enterRoom(jobId) {
             const job = globalEvents[jobId];
@@ -628,7 +734,7 @@
                 <p><b>📍 工作派遣地點：</b>[${job.region || ''}] ${job.city || ''} ${job.district || ''} ${job.detailedAddress || ''}</p>
                 <p><b>👷 現場施作人員：</b>${job.workerName}</p>
                 ${extraDetails}
-                <p style="font-size:12px; color:#8e8e93; margin-top:15px;">由【${job.creatorName || '系統'}】指派建檔</p>
+                <p style="font-size:12px; color:#8e8e93; margin-top:15px;">由內部成員【${job.creatorName || '系統'}】指派建檔</p>
             `;
         }
 
