@@ -3,113 +3,880 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工作行程安排與管理系統</title>
+    <title>工作行程安排與管理系統 - 團隊內部專用版</title>
+
+    <script>
+        if (navigator.userAgent.indexOf('Line') > -1) {
+            var currentUrl = window.location.href;
+            if (currentUrl.indexOf('openExternalBrowser=1') === -1) {
+                if (currentUrl.indexOf('?') > -1) {
+                    window.location.href = currentUrl + '&openExternalBrowser=1';
+                } else {
+                    window.location.href = currentUrl + '?openExternalBrowser=1';
+                }
+            }
+        }
+    </script>
+
     <style>
-        /* 原有設計保留，並加入反藍修正 */
-        body { font-family: 'Segoe UI', sans-serif; max-width: 1100px; margin: 20px auto; padding: 15px; background-color: #edeef2; }
-        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .radio-tile-group { display: flex; gap: 8px; margin-top: 5px; }
-        .radio-label { flex: 1; text-align: center; background: #f2f2f7; padding: 10px 5px; border-radius: 8px; cursor: pointer; font-weight: bold; border: 2px solid transparent; transition: 0.2s; font-size: 13px; }
-        .radio-label.active { background: #007AFF !important; color: white !important; border-color: #0056b3 !important; }
-        .radio-label input { display: none; }
-        .page { display: none; }
-        .page.active { display: block; }
-        .form-group { margin-bottom: 14px; }
-        .row-group { display: flex; gap: 10px; }
-        .row-group select, .row-group input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
-        button { background: #007AFF; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .group-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 15px; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1100px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333;
+        }
+        h1, h2, h3 { text-align: center; color: #2c3e50; margin-bottom: 10px;
+        }
+        
+        .main-container { display: flex;
+        gap: 20px; align-items: flex-start; margin-top: 20px; }
+        .left-col { flex: 4; min-width: 320px;
+        } 
+        .right-col { flex: 5; min-width: 350px;
+        } 
+
+        .card { background: white; padding: 20px; border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .form-group { margin-bottom: 14px;
+        }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555;
+        }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px;
+        border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #f9f9f9; font-family: inherit;
+        }
+        
+        .row-group { display: flex;
+        gap: 10px; margin-bottom: 10px; }
+        .row-group select, .row-group input { flex: 1;
+        }
+        
+        .radio-tile-group { display: flex;
+        gap: 8px; margin-top: 5px; }
+        .radio-label { flex: 1; text-align: center; background: #f2f2f7;
+        padding: 10px 5px; border-radius: 8px; cursor: pointer; font-weight: bold; border: 2px solid transparent; transition: 0.2s; font-size: 13px; white-space: nowrap;
+        }
+        .radio-label input { display: none;
+        }
+        
+        /* ⬇️ 新增：確保反藍特效優先級，解決安裝與二工無法反藍的問題 */
+        .radio-label.active { background: #007AFF !important; color: white !important; border-color: #0056b3 !important;
+        }
+        /* ⬆️ 新增結束 */
+        
+        .radio-label.active-status { background: #34c759; color: white; border-color: #24933e;
+        }
+
+        .product-item { display: flex; gap: 8px; margin-bottom: 8px;
+        }
+        .btn-remove-product { background: #ff3b30; color: white; border: none; border-radius: 8px; width: 40px;
+        cursor: pointer; font-weight: bold; }
+        .btn-remove-product:hover { background: #cc2419;
+        }
+        .btn-add-product { background: #5856d6; margin-top: 5px; font-size: 14px; padding: 8px; width: 100%;
+        color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+        }
+        .btn-add-product:hover { background: #433f9d;
+        }
+
+        .page { display: none;
+        }
+        .page.active { display: block;
+        }
+        
+        #pageAuth .card { max-width: 400px;
+        margin: 60px auto 0 auto; }
+
+        button { background: #007AFF; color: white;
+        border: none; padding: 12px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;
+        }
+        button:hover { background: #0056b3;
+        }
+        .btn-secondary { background: #8e8e93; margin-top: 10px;
+        }
+        .btn-secondary:hover { background: #636366;
+        }
+        
+        .filter-section { background: #fff;
+        padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px;
+        }
+        .tabs-container { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap;
+        padding-bottom: 3px; }
+        .tab-btn { padding: 8px 12px; font-size: 13px; border: none;
+        background: #f2f2f7; color: #8e8e93; border-radius: 8px; cursor: pointer; font-weight: bold; flex-shrink: 0;
+        }
+        .tab-btn.active { background: #007AFF; color: white;
+        }
+
+        .group-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea;
+        margin-bottom: 15px; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative;
+        }
+        .group-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #007AFF;
+        }
+        
+        .group-title { font-size: 17px;
+        font-weight: bold; color: #1c1c1e; display: flex; justify-content: space-between; align-items: center; padding-right: 35px;
+        }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;
+        color: white; white-space: nowrap; }
+        .status-undone { background: #ff9500;
+        }
+        .status-done { background: #34c759;
+        }
+        
+        .group-meta { font-size: 14px;
+        color: #555; margin-top: 6px; line-height: 1.4; }
+        .type-badge { background: #5856d6; color: white;
+        padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px; font-weight: bold;
+        }
+        .type-badge.type-2 { background: #ff3b30;
+        } 
+        .type-badge.type-m { background: #007AFF;
+        } 
+        .loc-badge { background: rgba(0, 122, 255, 0.1); color: #007AFF;
+        padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px; font-weight: bold;
+        }
+
+        .product-tag { background: #e5e5ea; color: #333; padding: 2px 6px; border-radius: 4px;
+        font-size: 12px; margin-right: 4px; display: inline-block; margin-top: 4px; font-weight: 500;
+        }
+        .rework-box { background: #fff2f2; border-left: 3px solid #ff3b30; padding: 8px; margin-top: 6px;
+        border-radius: 4px; font-size: 13px; color: #c0392b; }
+
+        .btn-delete-group { 
+            position: absolute;
+        top: 12px; right: 12px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; 
+            border: none; border-radius: 50%; width: 24px; height: 24px;
+        padding: 0; font-size: 12px; 
+            font-weight: bold; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-delete-group:hover { background: #ff3b30; color: white;
+        }
+
+        /* 🗑️ 資源回收桶專用外觀 */
+        .trash-section { background: #fdf2f2;
+        border: 2px dashed #ffa3a3; padding: 20px; border-radius: 16px; margin-top: 30px;
+        }
+        .trash-card { border: 1px solid #ffcccc; background: #fffcfc; cursor: default;
+        }
+        .trash-card:hover { transform: none; box-shadow: none; border-color: #ffcccc;
+        }
+        .trash-ops { margin-top: 10px; display: flex; gap: 8px;
+        }
+        .trash-ops button { padding: 6px 10px; font-size: 12px; width: auto;
+        }
+        .btn-restore { background: #34c759; } .btn-restore:hover { background: #24933e;
+        }
+        .btn-kill { background: #ff3b30; } .btn-kill:hover { background: #cc2419;
+        }
+
+        .room-header { border-bottom: 2px solid #007AFF; padding-bottom: 10px; margin-bottom: 15px;
+        }
+        .room-title { font-size: 22px; font-weight: bold; color: #007AFF;
+        }
+        .user-info-bar { text-align: right; font-size: 12px; color: #666; margin-bottom: 10px;
+        }
+        
+        .phone-link { color: #007AFF;
+        font-weight: bold; text-decoration: none; }
+        .phone-link:hover { text-decoration: underline;
+        }
+
+        @media (max-width: 850px) {
+            .main-container { flex-direction: column;
+        }
+            .left-col, .right-col { width: 100%; flex: none;
+        }
+        }
     </style>
 </head>
 <body>
 
     <div id="pageAuth" class="page active">
-        <h1>🏢 團隊內部管理系統</h1>
+        <h1>🏢 團隊內部排程管理系統</h1>
         <div class="card">
-            <div class="form-group"><label>帳號</label><input type="text" id="authAccount"></div>
-            <div class="form-group"><label>密碼</label><input type="password" id="authPassword"></div>
-            <button onclick="handleInternalLogin()">驗證登入</button>
+            <h2 style="text-align: center; margin-bottom: 20px;">內部成員登入</h2>
+            <div class="form-group">
+                <label>員工識別帳號</label>
+                <input type="text" id="authAccount" placeholder="請輸入指定 8 碼數字帳號">
+            </div>
+            <div class="form-group">
+                <label>登入密碼</label>
+                <input type="password" id="authPassword" placeholder="請輸入密碼">
+            </div>
+            <button id="btnPrimaryAuth" onclick="handleInternalLogin()">驗證登入</button>
         </div>
     </div>
 
     <div id="pageHall" class="page">
+        <div class="user-info-bar">目前登入：<b id="currentUserName" style="color:#007AFF;">成員</b> |
+        <a href="#" onclick="logout()" style="color: #ff3b30; font-weight: bold; text-decoration: none;">🚪 安全登出</a></div>
+        <h1>📋 全台施工團隊排程控制台</h1>
+
         <div class="main-container">
+            
             <div class="left-col">
                 <div class="card">
-                    <h2>新增行程</h2>
-                    <div class="radio-tile-group">
-                        <label class="radio-label active" id="lblTypeMeasure"><input type="radio" name="jobType" value="丈量" checked onchange="toggleJobTypeFields()"> 📐 丈量</label>
-                        <label class="radio-label" id="lblTypeInstall"><input type="radio" name="jobType" value="安裝" onchange="toggleJobTypeFields()"> 🔧 安裝</label>
-                        <label class="radio-label" id="lblTypeRework"><input type="radio" name="jobType" value="二工" onchange="toggleJobTypeFields()"> ⚠️ 二工</label>
+                    <h2>➕ 新增工作排程</h2>
+                    
+                    <div class="form-group">
+                        <label>工作大分類</label>
+                        <div class="radio-tile-group">
+                            <label class="radio-label active" id="lblTypeMeasure">
+                                <input type="radio" name="jobType" value="丈量" checked onchange="toggleJobTypeFields()"> 📐 丈量
+                            </label>
+                            <label class="radio-label" id="lblTypeInstall">
+                                <input type="radio" name="jobType" value="安裝" onchange="toggleJobTypeFields()"> 🔧 安裝
+                            </label>
+                            <label class="radio-label" id="lblTypeRework">
+                                <input type="radio" name="jobType" value="二工" onchange="toggleJobTypeFields()"> ⚠️ 二工
+                            </label>
+                        </div>
                     </div>
-                    <div class="form-group"><label>工作地點</label>
+
+                    <div class="form-group">
+                        <label>工作發布人員 (系統自動鎖定)</label>
+                        <input type="text" id="displayCreator" readonly style="background: #e5e5ea;
+        color: #555; font-weight: bold;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>客戶名稱</label>
+                        <input type="text" id="customerName" placeholder="例如：陳先生 - 客廳改建案">
+                    </div>
+
+                    <div class="form-group">
+                        <label>客戶電話</label>
+                        <input type="tel" id="customerPhone" placeholder="例如：0912-345-678">
+                    </div>
+
+                    <div class="form-group">
+                        <label>工作地點 (區域 / 縣市 / 行政區)</label>
                         <div class="row-group">
-                            <select id="eventRegion" onchange="updateFormCities()"></select>
+                            <select id="eventRegion" onchange="updateFormCities()">
+                                <option value="北部">北部地區</option>
+                                <option value="中部">中部地區</option>
+                                <option value="南部">南部地區</option>
+                                <option value="東部">東部地區</option>
+                                <option value="離島">離島地區</option>
+                            </select>
                             <select id="eventCity" onchange="updateFormDistricts()"></select>
                             <select id="eventDistrict"></select>
                         </div>
+                        <input type="text" id="detailedAddress" placeholder="請輸入手打詳細地址" style="margin-top: 8px;">
                     </div>
-                    <button onclick="createJobSchedule()">發布行程</button>
+
+                    <div class="form-group">
+                        <label>預定施工日期與時間</label>
+                        <div class="row-group">
+                            <input type="date" id="eventDate">
+                            <input type="time" id="eventTime">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>現場施作人員</label>
+                        <input type="text" id="workerName" placeholder="例如：王師傅、李組長">
+                    </div>
+
+                    <div class="form-group" id="installProductSection" style="display: none;
+        background: #f2f2f7; padding: 12px; border-radius: 8px;">
+                        <label>產品型式 (可動態新增多個)</label>
+                        <div id="productInputsContainer"></div>
+                        <button type="button" class="btn-add-product" onclick="addProductInputField()">＋ 新增產品型式</button>
+                    </div>
+
+                    <div id="reworkSection" style="display: none;
+        background: #fff2f2; padding: 12px; border-radius: 8px; border: 1px solid #ffcccc;
+        margin-bottom: 14px;">
+                        <div class="form-group">
+                            <label style="color: #ff3b30;">⚠️ 二工原因說明</label>
+                            <textarea id="reworkReason" rows="2" placeholder="請輸入造成二次施工的原因"></textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="color: #ff3b30;">👤 主要出錯人員/單位</label>
+                            <input type="text" 
+        id="errorWorker" placeholder="例如：丈量工班、廠端製造">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>進度狀態</label>
+                        <div class="radio-tile-group">
+                            <label class="radio-label active-status" id="lblStatusUndone">
+                                <input type="radio" name="jobStatus" value="未完成" checked onchange="toggleStatusRadioClass()"> ⏳ 未完成
+                            </label>
+                            <label class="radio-label" id="lblStatusDone">
+                                <input type="radio" name="jobStatus" value="已完成" onchange="toggleStatusRadioClass()"> ✅ 已完成
+                            </label>
+                        </div>
+                    </div>
+
+                    <button onclick="createJobSchedule()">發布並儲存行程</button>
                 </div>
             </div>
+
             <div class="right-col">
-                <select id="filterType" onchange="renderGroupList()">
-                    <option value="全部">全部大分類</option><option value="丈量">📐 丈量</option><option value="安裝">🔧 安裝</option><option value="二工">⚠️ 二工</option><option value="歷年">📂 歷年記錄</option>
-                </select>
-                <div id="groupList"></div>
+                <h2>📋 行程篩選與即時列表</h2>
+                <div class="filter-section">
+                    <div class="row-group">
+                        <select id="filterType" onchange="renderGroupList()">
+                            <option value="全部">全部大分類</option>
+                            <option value="丈量">📐 僅看 丈量</option>
+                            <option value="安裝">🔧 僅看 安裝</option>
+                            <option value="二工">⚠️ 僅看 二工</option>
+                            <option value="歷年">📂 僅看 歷年記錄</option>
+                            </select>
+                        <select id="filterStatus" onchange="renderGroupList()">
+                            <option value="全部">全部進度狀態</option>
+                            <option value="未完成">⏳ 僅看 未完成</option>
+                            <option value="已完成">✅ 僅看 已完成</option>
+                        </select>
+                    </div>
+                    
+                    <div class="tabs-container">
+                        <button class="tab-btn active" onclick="switchFilterTab('全部')">全部地區</button>
+                        <button class="tab-btn" onclick="switchFilterTab('北部')">北部</button>
+                        <button class="tab-btn" onclick="switchFilterTab('中部')">中部</button>
+                        <button class="tab-btn" onclick="switchFilterTab('南部')">南部</button>
+                        <button class="tab-btn" onclick="switchFilterTab('東部')">東部</button>
+                        <button class="tab-btn" onclick="switchFilterTab('離島')">離島</button>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;
+        margin-top: 10px;">
+                        <label style="font-size: 12px;
+        color: #666;">📅 依工作日期範圍篩選：</label>
+                        <div class="row-group">
+                            <input type="date" id="filterStartDate" onchange="renderGroupList()">
+                            <span style="align-self: center;
+        color: #999;">至</span>
+                            <input type="date" id="filterEndDate" onchange="renderGroupList()">
+                            <button class="btn-secondary" onclick="clearDateFilter()" style="margin: 0;
+        padding: 8px; width: auto; font-size: 12px;">清除</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div 
+        id="groupList"></div>
             </div>
+        </div>
+
+        <div class="trash-section">
+            <h2>🗑️ 資源回收桶 <span style="font-size:14px;
+        font-weight:normal; color:#e74c3c;">(僅保留10天，過期自動永久刪除)</span></h2>
+            <div id="trashList"></div>
+        </div>
+    </div>
+
+    <div id="pageRoom" class="page">
+        <div class="card" style="max-width: 650px;
+        margin: 0 auto;">
+            <div class="room-header">
+                <div class="room-title" id="roomTitle">工作詳情</div>
+                <div id="roomStatusBadge" style="margin-top: 5px;"></div>
+            </div>
+            <div class="group-meta" id="roomDetails" style="font-size: 16px;
+        color: #333;"></div>
+            <div style="margin-top:20px; display: flex;
+        gap: 10px;">
+                <button class="btn-join" id="btnToggleJobStatus" onclick="handleToggleJobStatusServer()">切換完成狀態</button>
+            </div>
+            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 回到大廳列表</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, 
+        onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Firebase Config
-        const firebaseConfig = { /* ...您的原配置... */ };
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfEnsCez2ywbt0NQ4jPBUUr8oAIcIwyA0",
+            authDomain: "account-management-dashb-b4373.firebaseapp.com",
+            projectId: "account-management-dashb-b4373",
+            storageBucket: "account-management-dashb-b4373.appspot.com",
+            messagingSenderId: "294482078870",
+            appId: "1:294482078870:web:f75ff744e13f8f5c5f26b7",
+            measurementId: "G-9JHT96DE94",
+            databaseURL: "https://account-management-dashb-b4373-default-rtdb.firebaseio.com/"
+        };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 完整的全台地區資料
+        const ALLOWED_USERS = {
+            "20081002": { password: "20081002", name: "孫" },
+            "20250401": { password: "20250401", name: "WU" },
+            "20250806": { password: "20250806", name: "林" },
+            "20240802": { password: "20240802", name: "王" }
+        };
+        
+        // ⬇️ 新增：已為您替換為包含全台各區的完整 regionData
         const regionData = {
-            "北部": { "基隆市": ["仁愛區", "信義區", "中正區", "中山區", "安樂區", "暖暖區", "七堵區"], "台北市": ["中正區", "大同區", "中山區", "松山區", "大安區", "萬華區", "信義區", "士林區", "北投區", "內湖區", "南港區", "文山區"], "新北市": ["板橋區", "三重區", "中和區", "永和區", "新莊區", "新店區", "樹林區", "鶯歌區", "三峽區", "淡水區", "汐止區", "土城區", "蘆洲區", "五股區", "泰山區", "林口區", "深坑區", "石碇區", "坪林區", "三芝區", "石門區", "八里區", "平溪區", "雙溪區", "貢寮區", "金山區", "萬里區", "烏來區", "瑞芳區"], "桃園市": ["桃園區", "中壢區", "平鎮區", "八德區", "楊梅區", "蘆竹區", "大溪區", "龍潭區", "龜山區", "大園區", "觀音區", "新屋區", "復興區"], "新竹市": ["東區", "北區", "香山區"], "新竹縣": ["竹北市", "竹東鎮", "新埔鎮", "關西鎮", "湖口鄉", "新豐鄉", "芎林鄉", "橫山鄉", "北埔鄉", "寶山鄉", "峨眉鄉", "尖石鄉", "五峰鄉"], "宜蘭縣": ["宜蘭市", "羅東鎮", "蘇澳鎮", "頭城鎮", "礁溪鄉", "壯圍鄉", "員山鄉", "冬山鄉", "五結鄉", "三星鄉", "大同鄉", "南澳鄉"] },
-            "中部": { "苗栗縣": ["苗栗市", "頭份市", "竹南鎮", "後龍鎮", "通霄鎮", "苑裡鎮", "卓蘭鎮", "造橋鄉", "西湖鄉", "頭屋鄉", "公館鄉", "銅鑼鄉", "三義鄉", "大湖鄉", "獅潭鄉", "三灣鄉", "南庄鄉", "泰安鄉"], "台中市": ["中區", "東區", "南區", "西區", "北區", "北屯區", "西屯區", "南屯區", "太平區", "大里區", "霧峰區", "烏日區", "豐原區", "后里區", "清水區", "沙鹿區", "大甲區", "東勢區", "梧棲區", "神岡區", "大雅區", "潭子區", "外埔區", "大安區", "大肚區", "龍井區", "新社區", "石岡區", "和平區"], "彰化縣": ["彰化市", "員林市", "鹿港鎮", "和美鎮", "溪湖鎮", "田中鎮", "二林鎮", "線西鄉", "伸港鄉", "福興鄉", "秀水鄉", "花壇鄉", "芬園鄉", "大村鄉", "埔鹽鄉", "埔心鄉", "永靖鄉", "社頭鄉", "二水鄉", "田尾鄉", "埤頭鄉", "芳苑鄉", "大城鄉", "竹塘鄉", "溪州鄉"], "南投縣": ["南投市", "埔里鎮", "草屯鎮", "竹山鎮", "集集鎮", "名間鄉", "鹿谷鄉", "中寮鄉", "魚池鄉", "國姓鄉", "水里鄉", "信義鄉", "仁愛鄉"], "雲林縣": ["斗六市", "斗南鎮", "虎尾鎮", "西螺鎮", "土庫鎮", "北港鎮", "古坑鄉", "大埤鄉", "莿桐鄉", "林內鄉", "二崙鄉", "崙背鄉", "麥寮鄉", "東勢鄉", "褒忠鄉", "臺西鄉", "元長鄉", "四湖鄉", "口湖鄉", "水林鄉"] },
-            "南部": { "嘉義市": ["東區", "西區"], "嘉義縣": ["太保市", "朴子市", "布袋鎮", "大林鎮", "民雄鄉", "溪口鄉", "新港鄉", "六腳鄉", "東石鄉", "義竹鄉", "鹿草鄉", "水上鄉", "中埔鄉", "竹崎鄉", "梅山鄉", "番路鄉", "大埔鄉", "阿里山鄉"], "台南市": ["新營區", "鹽水區", "白河區", "柳營區", "後壁區", "東山區", "麻豆區", "下營區", "六甲區", "官田區", "大內區", "佳里區", "學甲區", "西港區", "七股區", "將軍區", "北門區", "新化區", "善化區", "新市區", "安定區", "山上區", "玉井區", "左鎮區", "楠西區", "南化區", "仁德區", "歸仁區", "關廟區", "龍崎區", "永康區", "東區", "南區", "北區", "安南區", "安平區", "中西區"], "高雄市": ["鹽埕區", "鼓山區", "左營區", "楠梓區", "三民區", "新興區", "前金區", "苓雅區", "前鎮區", "旗津區", "小港區", "鳳山區", "林園區", "大寮區", "大樹區", "大社區", "仁武區", "鳥松區", "岡山區", "橋頭區", "燕巢區", "田寮區", "阿蓮區", "路竹區", "湖內區", "茄萣區", "永安區", "彌陀區", "梓官區", "旗山區", "美濃區", "六龜區", "甲仙區", "杉林區", "內門區", "茂林區", "桃源區", "那瑪夏區"], "屏東縣": ["屏東市", "潮州鎮", "東港鎮", "恆春鎮", "萬丹鄉", "長治鄉", "麟洛鄉", "九如鄉", "里港鄉", "鹽埔鄉", "高樹鄉", "萬巒鄉", "內埔鄉", "竹田鄉", "新埤鄉", "枋寮鄉", "新園鄉", "崁頂鄉", "林邊鄉", "南州鄉", "佳冬鄉", "琉球鄉", "車城鄉", "滿州鄉", "枋山鄉", "三地門鄉", "霧臺鄉", "瑪家鄉", "泰武鄉", "來義鄉", "春日鄉", "獅體鄉", "牡丹鄉"] },
-            "東部": { "花蓮縣": ["花蓮市", "鳳林鎮", "玉里鎮", "新城鄉", "吉安鄉", "壽豐鄉", "光復鄉", "豐濱鄉", "瑞穗鄉", "富里鄉", "秀林鄉", "萬榮鄉", "卓溪鄉"], "台東縣": ["台東市", "成功鎮", "關山鎮", "卑南鄉", "大武鄉", "太麻里鄉", "東河鄉", "長濱鄉", "鹿野鄉", "池上鄉", "綠島鄉", "延平鄉", "海端鄉", "達仁鄉", "金峰鄉", "蘭嶼鄉"] },
-            "離島": { "澎湖縣": ["馬公市", "湖西鄉", "白沙鄉", "西嶼鄉", "望安鄉", "七美鄉"], "金門縣": ["金城鎮", "金湖鎮", "金沙鎮", "金寧鄉", "烈嶼鄉", "烏坵鄉"], "連江縣": ["南竿鄉", "北竿鄉", "莒光鄉", "東引鄉"] }
+            "北部": {
+                "基隆市": ["仁愛區", "信義區", "中正區", "中山區", "安樂區", "暖暖區", "七堵區"],
+                "台北市": ["中正區", "大同區", "中山區", "松山區", "大安區", "萬華區", "信義區", "士林區", "北投區", "內湖區", "南港區", "文山區"],
+                "新北市": ["板橋區", "三重區", "中和區", "永和區", "新莊區", "新店區", "樹林區", "鶯歌區", "三峽區", "淡水區", "汐止區", "土城區", "蘆洲區", "五股區", "泰山區", "林口區", "深坑區", "石碇區", "坪林區", "三芝區", "石門區", "八里區", "平溪區", "雙溪區", "貢寮區", "金山區", "萬里區", "烏來區", "瑞芳區"],
+                "桃園市": ["桃園區", "中壢區", "平鎮區", "八德區", "楊梅區", "蘆竹區", "大溪區", "龍潭區", "龜山區", "大園區", "觀音區", "新屋區", "復興區"],
+                "新竹市": ["東區", "北區", "香山區"],
+                "新竹縣": ["竹北市", "竹東鎮", "新埔鎮", "關西鎮", "湖口鄉", "新豐鄉", "芎林鄉", "橫山鄉", "北埔鄉", "寶山鄉", "峨眉鄉", "尖石鄉", "五峰鄉"],
+                "宜蘭縣": ["宜蘭市", "羅東鎮", "蘇澳鎮", "頭城鎮", "礁溪鄉", "壯圍鄉", "员山鄉", "冬山鄉", "五結鄉", "三星鄉", "大同鄉", "南澳鄉"]
+            },
+            "中部": {
+                "苗栗縣": ["苗栗市", "頭份市", "竹南鎮", "後龍鎮", "通霄鎮", "苑裡鎮", "卓蘭鎮", "造橋鄉", "西湖鄉", "頭屋鄉", "公館鄉", "銅鑼鄉", "三義鄉", "大湖鄉", "獅潭鄉", "三灣鄉", "南庄鄉", "泰安鄉"],
+                "台中市": ["中區", "東區", "南區", "西區", "北區", "北屯區", "西屯區", "南屯區", "太平區", "大里區", "霧峰區", "烏日區", "豐原區", "后里區", "清水區", "沙鹿區", "大甲區", "東勢區", "梧棲區", "神岡區", "大雅區", "潭子區", "外埔區", "大安區", "大肚區", "龍井區", "新社區", "石岡區", "和平區"],
+                "彰化縣": ["彰化市", "員林市", "鹿港鎮", "和美鎮", "溪湖鎮", "田中鎮", "二林鎮", "線西鄉", "伸港鄉", "福興鄉", "秀水鄉", "花壇鄉", "芬園鄉", "大村鄉", "埔鹽鄉", "埔心鄉", "永靖鄉", "社頭鄉", "二水鄉", "田尾鄉", "埤頭鄉", "芳苑鄉", "大城鄉", "竹塘鄉", "溪州鄉"],
+                "南投縣": ["南投市", "埔里鎮", "草屯鎮", "竹山鎮", "集集鎮", "名間鄉", "鹿谷鄉", "中寮鄉", "魚池鄉", "國姓鄉", "水里鄉", "信義鄉", "仁愛鄉"],
+                "雲林縣": ["斗六市", "斗南鎮", "虎尾鎮", "西螺鎮", "土庫鎮", "北港鎮", "古坑鄉", "大埤鄉", "莿桐鄉", "林內鄉", "二崙鄉", "崙背鄉", "麥寮鄉", "東勢鄉", "褒忠鄉", "臺西鄉", "元長鄉", "四湖鄉", "口湖鄉", "水林鄉"]
+            },
+            "南部": {
+                "嘉義市": ["東區", "西區"],
+                "嘉義縣": ["太保市", "朴子市", "布袋鎮", "大林鎮", "民雄鄉", "溪口鄉", "新港鄉", "六腳鄉", "東石鄉", "義竹鄉", "鹿草鄉", "水上鄉", "中埔鄉", "竹崎鄉", "梅山鄉", "番路鄉", "大埔鄉", "阿里山鄉"],
+                "台南市": ["新營區", "鹽水區", "白河區", "柳營區", "後壁區", "東山區", "麻豆區", "下營區", "六甲區", "官田區", "大內區", "佳里區", "學甲區", "西港區", "七股區", "將軍區", "北門區", "新化區", "善化區", "新市區", "安定區", "山上區", "玉井區", "左鎮區", "楠西區", "南化區", "仁德區", "歸仁區", "關廟區", "龍崎區", "永康區", "東區", "南區", "北區", "安南區", "安平區", "中西區"],
+                "高雄市": ["鹽埕區", "鼓山區", "左營區", "楠梓區", "三民區", "新興區", "前金區", "苓雅區", "前鎮區", "旗津區", "小港區", "鳳山區", "林園區", "大寮區", "大樹區", "大社區", "仁武區", "鳥松區", "岡山區", "橋頭區", "燕巢區", "田寮區", "阿蓮區", "路竹區", "湖內區", "茄萣區", "永安區", "彌陀區", "梓官區", "旗山區", "美濃區", "六龜區", "甲仙區", "杉林區", "內門區", "茂林區", "桃源區", "那瑪夏區"],
+                "屏東縣": ["屏東市", "潮州鎮", "東港鎮", "恆春鎮", "萬丹鄉", "長治鄉", "麟洛鄉", "九如鄉", "里港鄉", "鹽埔鄉", "高樹鄉", "萬巒鄉", "內埔鄉", "竹田鄉", "新埤鄉", "枋寮鄉", "新園鄉", "崁頂鄉", "林邊鄉", "南州鄉", "佳冬鄉", "琉球鄉", "車城鄉", "滿州鄉", "枋山鄉", "三地門鄉", "霧臺鄉", "瑪家鄉", "泰武鄉", "來義鄉", "春日鄉", "獅子鄉", "牡丹鄉"]
+            },
+            "東部": {
+                "花蓮縣": ["花蓮市", "鳳林鎮", "玉里鎮", "新城鄉", "吉安鄉", "壽豐鄉", "光復鄉", "豐濱鄉", "瑞穗鄉", "富里鄉", "秀林鄉", "萬榮鄉", "卓溪鄉"],
+                "台東縣": ["台東市", "成功鎮", "關山鎮", "卑南鄉", "大武鄉", "太麻里鄉", "東河鄉", "長濱鄉", "鹿野鄉", "池上鄉", "綠島鄉", "延平鄉", "海端鄉", "達仁鄉", "金峰鄉", "蘭嶼鄉"]
+            },
+            "離島": {
+                "澎湖縣": ["馬公市", "湖西鄉", "白沙鄉", "西嶼鄉", "望安鄉", "七美鄉"],
+                "金門縣": ["金城鎮", "金湖鎮", "金沙鎮", "金寧鄉", "烈嶼鄉", "烏坵鄉"],
+                "連江縣": ["南竿鄉", "北竿鄉", "莒光鄉", "東引鄉"]
+            }
+        };
+        /* ⬆️ 替換結束 */
+
+        let currentUser = null;
+        let globalEvents = {};
+        let globalTrash = {};
+        let currentRoomId = null;
+        let currentFilterRegion = "全部";
+        let dbUnsubscribe = null;
+        let dbTrashUnsubscribe = null;
+
+        window.handleInternalLogin = function() {
+            const account = document.getElementById('authAccount').value.trim();
+            const password = document.getElementById('authPassword').value;
+
+            if (ALLOWED_USERS[account] && ALLOWED_USERS[account].password === password) {
+                currentUser = { uid: account, name: ALLOWED_USERS[account].name };
+                sessionStorage.setItem("internal_user_uid", account);
+                sessionStorage.setItem("internal_user_name", ALLOWED_USERS[account].name);
+                loginSuccessAction();
+            } else {
+                alert("❌ 帳號或密碼錯誤，此系統僅供授權內部成員使用！");
+            }
         };
 
-        // UI 互動修正：綁定所有 radio 切換效果
+        function loginSuccessAction() {
+            document.getElementById('currentUserName').innerText = currentUser.name;
+            document.getElementById('displayCreator').value = currentUser.name; 
+            switchPage('hall');
+            listenToDatabase();
+        }
+
+        if(sessionStorage.getItem("internal_user_uid")) {
+            currentUser = {
+                uid: sessionStorage.getItem("internal_user_uid"),
+                name: sessionStorage.getItem("internal_user_name")
+            };
+            loginSuccessAction();
+        }
+
+        window.logout = function() { 
+            sessionStorage.clear();
+            currentUser = null;
+            if(dbUnsubscribe) { dbUnsubscribe(); dbUnsubscribe = null; }
+            if(dbTrashUnsubscribe) { dbTrashUnsubscribe();
+            dbTrashUnsubscribe = null; }
+            switchPage('auth');
+        };
+
         window.toggleJobTypeFields = function() {
-            document.querySelectorAll('input[name="jobType"]').forEach(r => {
-                r.parentElement.classList.toggle('active', r.checked);
-            });
-            // 邏輯處理...
+            const selectedType = document.querySelector('input[name="jobType"]:checked').value;
+            document.getElementById('lblTypeMeasure').classList.toggle('active', selectedType === "丈量");
+            document.getElementById('lblTypeInstall').classList.toggle('active', selectedType === "安裝");
+            document.getElementById('lblTypeRework').classList.toggle('active', selectedType === "二工");
+
+            const productSection = document.getElementById('installProductSection');
+            const reworkSection = document.getElementById('reworkSection');
+            if (selectedType === "安裝") {
+                productSection.style.display = 'block';
+                reworkSection.style.display = 'none';
+                const container = document.getElementById('productInputsContainer');
+                if(container.children.length === 0) { addProductInputField();
+                }
+            } else if (selectedType === "二工") {
+                productSection.style.display = 'none';
+                reworkSection.style.display = 'block';
+            } else { 
+                productSection.style.display = 'none';
+                reworkSection.style.display = 'none';
+            }
         };
 
-        // 歷年篩選邏輯：結合日期判斷
-        window.renderGroupList = function() {
+        window.toggleStatusRadioClass = function() {
+            const status = document.querySelector('input[name="jobStatus"]:checked').value;
+            const undoneLbl = document.getElementById('lblStatusUndone');
+            const doneLbl = document.getElementById('lblStatusDone');
+            if(status === "未完成") { undoneLbl.classList.add('active-status'); doneLbl.classList.remove('active-status');
+            } 
+            else { undoneLbl.classList.remove('active-status'); doneLbl.classList.add('active-status');
+            }
+        };
+
+        window.addProductInputField = function() {
+            const container = document.getElementById('productInputsContainer');
+            const div = document.createElement('div');
+            div.className = 'product-item';
+            div.innerHTML = `
+                <input type="text" class="product-type-input" placeholder="例如：平開門、空間門、通風門">
+                <button type="button" class="btn-remove-product" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(div);
+        };
+
+        window.updateFormCities = function() {
+            const region = document.getElementById('eventRegion').value;
+            const citySelect = document.getElementById('eventCity');
+            citySelect.innerHTML = '';
+            if(!regionData[region]) return;
+            Object.keys(regionData[region]).forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = city; opt.innerText = city;
+                citySelect.appendChild(opt);
+            });
+            updateFormDistricts();
+        };
+
+        window.updateFormDistricts = function() {
+            const region = document.getElementById('eventRegion').value;
+            const city = document.getElementById('eventCity').value;
+            const distSelect = document.getElementById('eventDistrict');
+            distSelect.innerHTML = '';
+            if(!city || !regionData[region][city]) return;
+            regionData[region][city].forEach(dist => {
+                const opt = document.createElement('option');
+                opt.value = dist; opt.innerText = dist;
+                distSelect.appendChild(opt);
+            });
+        };
+
+        function listenToDatabase() {
+            if (dbUnsubscribe) dbUnsubscribe();
+            dbUnsubscribe = onValue(ref(db, 'jobs'), (snapshot) => {
+                globalEvents = snapshot.val() || {};
+                renderGroupList();
+                if(currentRoomId) enterRoom(currentRoomId);
+            });
+            if (dbTrashUnsubscribe) dbTrashUnsubscribe();
+            dbTrashUnsubscribe = onValue(ref(db, 'trash'), (snapshot) => {
+                globalTrash = snapshot.val() || {};
+                checkAndCleanExpiredTrash();
+                renderTrashList();
+            });
+        }
+
+        window.createJobSchedule = function() {
+            const jobType = document.querySelector('input[name="jobType"]:checked').value;
+            const customerName = document.getElementById('customerName').value.trim();
+            const customerPhone = document.getElementById('customerPhone').value.trim(); // 📞 新增電話取值
+            const region = document.getElementById('eventRegion').value;
+            const city = document.getElementById('eventCity').value;
+            const district = document.getElementById('eventDistrict').value;
+            const detailedAddress = document.getElementById('detailedAddress').value.trim();
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const workerName = document.getElementById('workerName').value.trim();
+            const jobStatus = document.querySelector('input[name="jobStatus"]:checked').value;
+
+            // 把電話也加入必填防呆
+            if (!customerName || !customerPhone || !date || !time || !workerName || !detailedAddress) { alert('請完整填寫所有必要欄位（包含客戶電話）！');
+            return; }
+
+            let productTypesList = [];
+            if(jobType === "安裝") {
+                const inputs = document.querySelectorAll('.product-type-input');
+                inputs.forEach(input => { if(input.value.trim() !== "") productTypesList.push(input.value.trim()); });
+                if(productTypesList.length === 0) { alert('請至少填寫一個產品型式！'); return;
+                }
+            }
+
+            let reworkReason = "";
+            let errorWorker = "";
+            if (jobType === "二工") {
+                reworkReason = document.getElementById('reworkReason').value.trim();
+                errorWorker = document.getElementById('errorWorker').value.trim();
+                if(!reworkReason) { alert('請務必填寫二工原因說明！'); return; }
+            }
+
+            const newJobRef = push(ref(db, 'jobs'));
+            set(newJobRef, {
+                id: newJobRef.key,
+                creatorUid: currentUser.uid,
+                creatorName: currentUser.name, 
+                jobType: jobType,
+                customerName: customerName,
+                customerPhone: customerPhone, // 📞 寫入資料庫
+                region: region, city: city, district: district, detailedAddress: detailedAddress,
+                date: date, time: time,
+                workerName: workerName,
+                productTypes: productTypesList,
+                reworkReason: reworkReason,
+                errorWorker: errorWorker,
+                jobStatus: jobStatus
+            });
+            // 清空表單
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
+            // 📞 清空電話欄位
+            document.getElementById('detailedAddress').value = '';
+            document.getElementById('eventDate').value = '';
+            document.getElementById('eventTime').value = '';
+            document.getElementById('workerName').value = '';
+            document.getElementById('reworkReason').value = '';
+            document.getElementById('errorWorker').value = '';
+            document.getElementById('productInputsContainer').innerHTML = '';
+            if(jobType === "安裝") addProductInputField();
+            alert('工作行程已成功指派並建檔！');
+        };
+
+        window.switchFilterTab = function(regionName) {
+            currentFilterRegion = regionName;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.innerText.includes(regionName)) btn.classList.add('active');
+            });
+            renderGroupList();
+        };
+
+        window.clearDateFilter = function() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            renderGroupList();
+        };
+
+        function renderGroupList() {
             const listDiv = document.getElementById('groupList');
-            const selType = document.getElementById('filterType').value;
-            const today = new Date().toISOString().split('T')[0];
             listDiv.innerHTML = '';
             
-            Object.values(globalEvents || {}).forEach(job => {
-                if (selType === "歷年") {
-                    if (!(job.jobStatus === "已完成" && job.date < today)) return;
-                } else if (selType !== "全部" && job.jobType !== selType) return;
+            const keys = Object.keys(globalEvents);
+            if (keys.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">目前尚無排定的工作行程。</p>';
+                return;
+            }
+
+            const selType = document.getElementById('filterType').value;
+            const selStatus = document.getElementById('filterStatus').value;
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+
+            let hasContent = false;
+            keys.reverse().forEach(key => {
+                const job = globalEvents[key];
+
+                /* ⬇️ 新增：歷年篩選邏輯判斷 */
+                const today = new Date().toISOString().split('T')[0];
+                if (selType === "歷年" && (job.jobStatus !== "已完成" || job.date >= today)) return;
                 
-                // 產生卡片邏輯...
+                // 將原來的 if (selType !== "全部" && job.jobType !== selType) 稍作保護，避免與歷年邏輯衝突
+                if (selType !== "全部" && selType !== "歷年" && job.jobType !== selType) return;
+                /* ⬆️ 新增結束 */
+
+                if (selStatus !== "全部" && job.jobStatus !== selStatus) return;
+                if (currentFilterRegion !== "全部" && job.region !== currentFilterRegion) return;
+                if (startDate && job.date < startDate) return;
+                if (endDate && job.date > endDate) return;
+
+                hasContent = true;
+                const card = document.createElement('div');
+                card.className = 'group-card';
+        
+                card.onclick = (e) => { if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return; switchPage('room', job.id); };
+
+                const statusClass = job.jobStatus === "已完成" ? "status-badge status-done" : "status-badge status-undone";
+                
+                let badgeClass = "type-badge";
+              
+                if(job.jobType === "二工") badgeClass = "type-badge type-2";
+                if(job.jobType === "丈量") badgeClass = "type-badge type-m";
+
+                let extraHtml = '';
+                if(job.jobType === "安裝" && job.productTypes) {
+                    extraHtml = '<div style="margin-top:2px;">';
+                    job.productTypes.forEach(p => { extraHtml += `<span class="product-tag">📦 ${p}</span>`; });
+                    extraHtml += '</div>';
+                } else if(job.jobType === "二工" && job.reworkReason) {
+                    extraHtml = `
+                        <div class="rework-box">
+                            🚨 <b>原因：</b>${job.reworkReason}<br>
+                            👤 <b>責任：</b>${job.errorWorker || '未註明'}
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <button class="btn-delete-group" onclick="deleteJobScheduleServer(event, '${job.id}')">✕</button>
+                    <div class="group-title">
+                        <span><span class="${badgeClass}">${job.jobType}</span>${job.customerName}</span>
+                        <span class="${statusClass}">${job.jobStatus}</span>
+                    </div>
+                    <div class="group-meta">
+                        📞 客戶電話：<b>${job.customerPhone || '未提供'}</b><br>
+                        📅 預定時間：<b>${job.date} ${job.time}</b> (發布人: ${job.creatorName || '未指定'})<br>
+                        📍 派工地點：<span class="loc-badge">${job.city || ''}${job.district || ''}</span>${job.detailedAddress || ''}<br>
+                        👷 現場人員：<b>${job.workerName}</b>
+                    </div>
+                    ${extraHtml}
+                `;
+                listDiv.appendChild(card);
+            });
+
+            if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">沒有符合篩選條件的工作排程。</p>';
+        }
+
+        // 🗑️ 刪除排程
+        window.deleteJobScheduleServer = function(event, jobId) {
+            event.stopPropagation();
+            if (confirm('確認是否要把此工作排程移到回收桶？')) {
+                const jobData = globalEvents[jobId];
+                if (!jobData) return;
+
+                jobData.deletedBy = currentUser.name;
+                jobData.deletedAt = Date.now();
+
+                set(ref(db, 'trash/' + jobId), jobData).then(() => {
+                    remove(ref(db, 'jobs/' + jobId));
+                });
+            }
+        };
+
+        // 📋 渲染資源回收桶
+        function renderTrashList() {
+            const trashDiv = document.getElementById('trashList');
+            trashDiv.innerHTML = '';
+            
+            const keys = Object.keys(globalTrash);
+            if (keys.length === 0) {
+                trashDiv.innerHTML = '<p style="color:#999; text-align:center; padding:10px; margin:0;">回收桶目前空空如也。</p>';
+                return;
+            }
+
+            keys.reverse().forEach(key => {
+                const item = globalTrash[key];
+                
+                const msPassed = Date.now() - item.deletedAt;
+                const daysLeft = Math.max(0, Math.ceil((10 * 24 * 60 * 60 * 1000 - msPassed) / (1000 * 60 * 60 * 24)));
+
+                const card = document.createElement('div');
+                card.className = 'group-card trash-card';
+
+                card.innerHTML = `
+                    <div class="group-title">
+                        <span style="color:#777;"><del>【${item.jobType}】${item.customerName}</del></span>
+                        <span class="status-badge" style="background:#e74c3c;">⏳ 剩餘 ${daysLeft} 天自動清除</span>
+                    </div>
+                    <div class="group-meta" style="color:#777;">
+                        📞 電話：${item.customerPhone || '未提供'} | 📅 原預定：${item.date} ${item.time}<br>
+                        🛑 原始發布：<b>${item.creatorName || '未知'}</b> | 🔴 <b style="color:#d63031;">由【${item.deletedBy || '未知'}】刪除</b>
+                    </div>
+                    <div class="trash-ops">
+                        <button class="btn-restore" onclick="restoreFromTrash('${item.id}')">🔄 還原行程</button>
+                        <button class="btn-kill" onclick="permanentlyDeleteTrash('${item.id}')">💥 永久刪除</button>
+                    </div>
+                `;
+                trashDiv.appendChild(card);
+            });
+        }
+
+        // 🔄 還原行程
+        window.restoreFromTrash = function(jobId) {
+            const data = globalTrash[jobId];
+            if (!data) return;
+
+            delete data.deletedBy;
+            delete data.deletedAt;
+
+            set(ref(db, 'jobs/' + jobId), data).then(() => {
+                remove(ref(db, 'trash/' + jobId));
+                alert('行程已成功還原回大廳！');
             });
         };
 
-        // 初始化
-        Object.keys(regionData).forEach(r => {
-            const opt = document.createElement('option'); opt.value = r; opt.innerText = r;
-            document.getElementById('eventRegion').appendChild(opt);
-        });
-        window.updateFormCities = () => { /* 完整綁定邏輯 */ };
-        window.updateFormDistricts = () => { /* 完整綁定邏輯 */ };
+        // 💥 主動永久刪除
+        window.permanentlyDeleteTrash = function(jobId) {
+            if (confirm('警告：此操作將永久銷毀資料，無法再復原！是否確認刪除？')) {
+                remove(ref(db, 'trash/' + jobId));
+            }
+        };
+
+        // ⏳ 自動清除過期回收桶
+        function checkAndCleanExpiredTrash() {
+            const keys = Object.keys(globalTrash);
+            const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            keys.forEach(key => {
+                const item = globalTrash[key];
+                if (item.deletedAt && (now - item.deletedAt > tenDaysMs)) {
+                    remove(ref(db, 'trash/' + key)); 
+                }
+            });
+        }
+
+        // 進入工作詳情頁面
+        function enterRoom(jobId) {
+            const job = globalEvents[jobId];
+            if (!job) { goBackToHall(); return; }
+
+            document.getElementById('roomTitle').innerText = `【${job.jobType}工程】${job.customerName}`;
+            const statusBadge = document.getElementById('roomStatusBadge');
+            statusBadge.innerHTML = job.jobStatus === "已完成" 
+                ? '<span class="status-badge status-done" style="font-size:14px;">✅ 行程進度：已完成</span>' 
+                : '<span class="status-badge status-undone" style="font-size:14px;">⏳ 行程進度：未完成</span>';
+            
+            let extraDetails = '';
+            if(job.jobType === "安裝" && job.productTypes) {
+                extraDetails = `<p><b>📦 指定安裝產品型式：</b><br>` + job.productTypes.map(p => ` - ${p}`).join('<br>') + `</p>`;
+            } else if (job.jobType === "二工") {
+                extraDetails = `
+                    <div style="background:#fff2f2; padding:12px; border-radius:8px; border:1px solid #ffcccc; margin-top:10px;">
+                        <p style="color:#ff3b30; margin:0 0 6px 0;"><b>🚨 二次施工異常追蹤：</b></p>
+                        <p style="margin:0 0 4px 0;"><b>● 二工原因：</b>${job.reworkReason}</p>
+                        <p style="margin:0;"><b>● 出錯責任人員：</b>${job.errorWorker || '未註明'}</p>
+                    </div>
+                `;
+            }
+
+            // 📞 手機點擊即可撥號的設計
+            const phoneLinkHtml = job.customerPhone ? `<a href="tel:${job.customerPhone}" class="phone-link">${job.customerPhone}</a>` : '未提供';
+
+            document.getElementById('roomDetails').innerHTML = `
+                <p><b>📞 客戶電話：</b>${phoneLinkHtml}</p>
+                <p><b>📅 施工日期：</b>${job.date}</p>
+                <p><b>⏰ 施工時間：</b>${job.time}</p>
+                <p><b>📍 工作派遣地點：</b>[${job.region || ''}] ${job.city || ''} ${job.district || ''} ${job.detailedAddress || ''}</p>
+                <p><b>👷 現場施作人員：</b>${job.workerName}</p>
+                ${extraDetails}
+                <p style="font-size:12px; color:#8e8e93; margin-top:15px;">由內部成員【${job.creatorName || '系統'}】指派建檔</p>
+            `;
+        }
+
+        window.handleToggleJobStatusServer = function() {
+            const job = globalEvents[currentRoomId];
+            if(!job) return;
+            const nextStatus = job.jobStatus === "已完成" ? "未完成" : "已完成";
+            update(ref(db, `jobs/${currentRoomId}`), { jobStatus: nextStatus });
+        };
+        
+        window.goBackToHall = function() { switchPage('hall'); };
+
+        function switchPage(pageName, roomId = null) {
+            currentRoomId = roomId;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            if(pageName === 'auth') document.getElementById('pageAuth').classList.add('active');
+            if(pageName === 'hall') { document.getElementById('pageHall').classList.add('active'); renderGroupList(); }
+            if(pageName === 'room') { document.getElementById('pageRoom').classList.add('active'); enterRoom(roomId); }
+        }
+
         updateFormCities();
     </script>
 </body>
