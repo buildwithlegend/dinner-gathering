@@ -111,7 +111,7 @@
             <h2 style="text-align: center; margin-bottom: 20px;">內部成員登入</h2>
             <div class="form-group">
                 <label>員工識別帳號</label>
-                <input type="text" id="authAccount" placeholder="請輸入指定帳號 (例如: user1)">
+                <input type="text" id="authAccount" placeholder="請輸入指定 8 碼數字帳號">
             </div>
             <div class="form-group">
                 <label>登入密碼</label>
@@ -288,7 +288,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 🔒 【四組限定帳號密碼設定清單】 (密碼已成功更新為指定的四組日期)
+        // 🔒 【四組限定帳號密碼設定清單】 (帳號密碼皆為 8 碼同數)
         const ALLOWED_USERS = {
             "20081002": { password: "20081002", name: "孫" },
             "20250401": { password: "20250401", name: "WU" },
@@ -327,7 +327,7 @@
             "離島": {
                 "澎湖縣": ["馬公市", "湖西鄉", "白沙鄉", "西嶼鄉", "望安鄉", "七美鄉"],
                 "金門縣": ["金城鎮", "金湖鎮", "金沙鎮", "金寧鄉", "烈嶼鄉", "烏坵鄉"],
-                "連江县": ["南竿鄉", "北竿鄉", "莒光鄉", "東引鄉"]
+                "連江縣": ["南竿鄉", "北竿鄉", "莒光鄉", "東引鄉"]
             }
         };
 
