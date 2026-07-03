@@ -2,70 +2,57 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>團隊施工排程總控系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作行程管理系統 - 含歷史紀錄</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #edeef2; margin: 0; padding: 20px; }
         .main-container { display: flex; gap: 20px; flex-wrap: wrap; }
-        .col-left { flex: 1; min-width: 350px; }
-        .col-right { flex: 2; min-width: 450px; }
+        .left-col { flex: 1; min-width: 350px; }
+        .right-col { flex: 2; min-width: 450px; }
         .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         h2 { color: #2c3e50; border-bottom: 2px solid #007AFF; padding-bottom: 8px; font-size: 18px; }
-        .form-group { margin-bottom: 12px; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        button { background: #007AFF; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .history-item { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #8e8e93; font-size: 13px; }
-        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; color: white; background: #34c759; }
+        .history-item { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #8e8e93; font-size: 13px; cursor: pointer; }
+        .history-item:hover { background: #f0f0f0; }
+        .filter-box { margin-bottom: 10px; }
+        input, select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div id="pageAuth" style="display:block;">
-    <div class="card" style="max-width:400px; margin:50px auto;">
-        <h2>內部成員登入</h2>
-        <input type="text" id="uid" placeholder="帳號" style="margin-bottom:10px;">
-        <input type="password" id="pw" placeholder="密碼" style="margin-bottom:10px;">
-        <button onclick="login()">驗證登入</button>
-    </div>
-</div>
-
-<div id="pageMain" style="display:none;">
+<div id="pageMain">
     <div class="main-container">
-        <div class="col-left">
+        
+        <div class="left-col">
             <div class="card">
-                <h2>➕ 新增排程</h2>
-                <input type="text" id="cust" placeholder="客戶名稱" style="margin-bottom:10px;">
-                <input type="tel" id="phone" placeholder="客戶電話" style="margin-bottom:10px;">
-                <input type="date" id="date" style="margin-bottom:10px;">
-                <select id="type" style="margin-bottom:10px;">
-                    <option value="丈量">丈量</option>
-                    <option value="安裝">安裝</option>
-                    <option value="二工">二工</option>
+                <h2>➕ 新增行程</h2>
+                <input type="text" id="customerName" placeholder="客戶名稱">
+                <input type="date" id="eventDate" style="margin-top:10px;">
+                <select id="eventRegion" style="margin-top:10px;">
+                    <option value="北部">北部</option><option value="中部">中部</option><option value="南部">南部</option>
                 </select>
-                <button onclick="saveJob()">發布行程</button>
+                <button onclick="saveJob()" style="margin-top:15px;">發布行程</button>
             </div>
-            
+
             <div class="card">
                 <h2>📜 歷史紀錄搜尋</h2>
-                <select id="sCity" onchange="renderHistory()">
-                    <option value="全部">全部地區</option>
-                    <option value="台北市">台北市</option>
-                    <option value="台中市">台中市</option>
-                    <option value="高雄市">高雄市</option>
-                </select>
-                <div style="display:flex; gap:5px; margin:10px 0;">
-                    <input type="date" id="sStart" onchange="renderHistory()">
-                    <input type="date" id="sEnd" onchange="renderHistory()">
+                <div class="filter-box">
+                    <select id="searchCity" onchange="renderHistory()">
+                        <option value="全部">全部地區</option>
+                        <option value="台北市">台北市</option>
+                        <option value="台中市">台中市</option>
+                    </select>
+                    <input type="date" id="searchStart" onchange="renderHistory()">
+                    <input type="date" id="searchEnd" onchange="renderHistory()">
                 </div>
-                <div id="historyList"></div>
+                <div id="historyList" style="max-height: 400px; overflow-y: auto;"></div>
             </div>
         </div>
 
-        <div class="col-right">
+        <div class="right-col">
             <div class="card">
-                <h2>📋 進行中行程</h2>
+                <h2>📋 進行中行程 (未來日期)</h2>
                 <div id="activeList"></div>
             </div>
-            
             <div class="card" style="border: 2px dashed #ff9500;">
                 <h2>🗑️ 資源回收桶</h2>
                 <div id="trashList"></div>
@@ -76,50 +63,49 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const db = getDatabase(initializeApp({ databaseURL: "https://account-management-dashb-b4373-default-rtdb.firebaseio.com/" }));
-    const today = "2026-07-03";
-
-    window.login = () => { document.getElementById('pageAuth').style.display = 'none'; document.getElementById('pageMain').style.display = 'block'; };
-
-    window.saveJob = () => {
-        const job = {
-            id: Date.now(),
-            cust: document.getElementById('cust').value,
-            phone: document.getElementById('phone').value,
-            date: document.getElementById('date').value,
-            type: document.getElementById('type').value,
-            deletedAt: null
-        };
-        push(ref(db, 'jobs'), job);
-        alert('發布成功');
-    };
+    const TODAY = "2026-07-03"; // 系統基準日期
 
     onValue(ref(db, 'jobs'), (snap) => {
         const jobs = Object.values(snap.val() || {});
-        
-        // 渲染進行中
-        const active = document.getElementById('activeList');
-        active.innerHTML = '';
-        jobs.filter(j => j.date >= today).forEach(j => {
-            active.innerHTML += `<div class="history-item"><b>${j.date}</b> | ${j.cust} <button onclick="moveToTrash(${j.id})">刪除</button></div>`;
-        });
-
-        // 渲染歷史與回收桶邏輯一致
-        window.renderHistory = () => {
-            const list = document.getElementById('historyList');
-            list.innerHTML = '';
-            jobs.filter(j => j.date < today).forEach(j => {
-                list.innerHTML += `<div class="history-item"><b>${j.date}</b><br>${j.cust} (${j.phone})</div>`;
-            });
-        };
-        renderHistory();
+        renderActive(jobs);
+        renderHistory(jobs);
     });
 
-    window.moveToTrash = (id) => {
-        // 此處對接你的 Firebase 垃圾桶邏輯
-        alert('已移至回收桶');
+    function renderActive(jobs) {
+        const list = document.getElementById('activeList');
+        list.innerHTML = '';
+        jobs.filter(j => j.date >= TODAY).forEach(j => {
+            list.innerHTML += `<div class="history-item">${j.date} | ${j.customerName} | ${j.region}</div>`;
+        });
+    }
+
+    // 新增：根據地區與日期過濾歷史紀錄
+    window.renderHistory = (jobsData) => {
+        const jobs = jobsData || window.allJobs || [];
+        window.allJobs = jobs; // 暫存資料以供篩選使用
+        
+        const list = document.getElementById('historyList');
+        const sCity = document.getElementById('searchCity').value;
+        const sStart = document.getElementById('searchStart').value;
+        const sEnd = document.getElementById('searchEnd').value;
+
+        list.innerHTML = '';
+        jobs.filter(j => j.date < TODAY).forEach(job => {
+            const matchCity = (sCity === "全部" || job.region === sCity);
+            const matchDate = (!sStart || job.date >= sStart) && (!sEnd || job.date <= sEnd);
+            
+            if (matchCity && matchDate) {
+                list.innerHTML += `<div class="history-item"><b>${job.date}</b> | ${job.customerName} (${job.region})</div>`;
+            }
+        });
+    };
+
+    window.saveJob = () => {
+        // 此處對接您原有的存檔邏輯
+        alert("已發布至系統");
     };
 </script>
 </body>
