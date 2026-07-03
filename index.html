@@ -3,27 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全台揪團小群組系統 - 權限安全版</title>
-
-    <meta property="og:title" content="全台揪團小群組系統">
-    <meta property="og:description" content="全台即時同步揪團大廳，快來加入或開立屬於你的小群組吧！">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://buildwithlegend.github.io/dinner-gathering/">
-    <meta property="og:image" content="https://buildwithlegend.github.io/dinner-gathering/share-cover.png">
-
-    <link rel="icon" href="https://buildwithlegend.github.io/dinner-gathering/share-cover.png" type="image/png">
-    <link rel="apple-touch-icon" href="https://buildwithlegend.github.io/dinner-gathering/share-cover.png">
+    <title>工作行程行程安排與管理系統</title>
 
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
         h1, h2, h3 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
         .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .form-group { margin-bottom: 12px; }
+        .form-group { margin-bottom: 14px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
         .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #f9f9f9; }
-        .datetime-group { display: flex; gap: 10px; }
-        .datetime-group input, .datetime-group select { flex: 1; }
         
+        /* 欄位並排樣式 */
+        .row-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        .row-group select, .row-group input { flex: 1; }
+        
+        /* 單選鈕樣式 (大分類/狀態) */
+        .radio-tile-group { display: flex; gap: 10px; margin-top: 5px; }
+        .radio-label { flex: 1; text-align: center; background: #f2f2f7; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; border: 2px solid transparent; transition: 0.2s; }
+        .radio-label input { display: none; }
+        .radio-label.active { background: #007AFF; color: white; border-color: #0056b3; }
+        .radio-label.active-status { background: #34c759; color: white; border-color: #24933e; }
+
+        /* 動態產品欄位樣式 */
+        .product-item { display: flex; gap: 8px; margin-bottom: 8px; }
+        .btn-remove-product { background: #ff3b30; color: white; border: none; border-radius: 8px; width: 40px; cursor: pointer; font-weight: bold; }
+        .btn-remove-product:hover { background: #cc2419; }
+        .btn-add-product { background: #5856d6; margin-top: 5px; font-size: 14px; padding: 8px; }
+        .btn-add-product:hover { background: #433f9d; }
+
         .page { display: none; }
         .page.active { display: block; }
 
@@ -34,47 +41,38 @@
         .btn-google { background: #fff; color: #757575; border: 1px solid #ddd; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .btn-google:hover { background: #f5f5f5; color: #333; }
         .btn-google img { width: 18px; height: 18px; }
-        .btn-join { background: #34c759; }
-        .btn-join:hover { background: #28a745; }
         
-        /* 地區分頁選單樣式 */
-        .tabs-container { display: flex; gap: 5px; margin-bottom: 15px; background: #fff; padding: 6px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto; white-space: nowrap; }
-        .tab-btn { flex: 1; padding: 10px 15px; font-size: 14px; border: none; background: transparent; color: #8e8e93; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; transition: 0.2s; min-width: 60px; width: auto; }
+        /* 大廳過濾區外觀 */
+        .filter-section { background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .tabs-container { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap; }
+        .tab-btn { flex: 1; padding: 10px; font-size: 14px; border: none; background: #f2f2f7; color: #8e8e93; border-radius: 8px; cursor: pointer; font-weight: bold; min-width: 60px; }
         .tab-btn.active { background: #007AFF; color: white; }
 
-        /* 縣市過濾標籤樣式 */
-        .city-tags-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; padding: 0 5px; }
-        .city-tag { background: #e5e5ea; color: #333; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
-        .city-tag.active { background: #34c759; color: white; }
-
-        /* 小群組卡片外觀 */
+        /* 工作行程卡片外觀 */
         .group-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 15px; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative; }
         .group-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #007AFF; }
         
         .group-title { font-size: 18px; font-weight: bold; color: #1c1c1e; display: flex; justify-content: space-between; align-items: center; padding-right: 35px; }
-        .group-count { background: #ff9500; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; flex-shrink: 0; margin-left: 10px; }
-        .group-meta { font-size: 14px; color: #8e8e93; margin-top: 5px; }
-        .city-badge { background: rgba(0, 122, 255, 0.1); color: #007AFF; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px; font-weight: bold; white-space: nowrap; }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; }
+        .status-undone { background: #ff9500; }
+        .status-done { background: #34c759; }
+        
+        .group-meta { font-size: 14px; color: #8e8e93; margin-top: 5px; line-height: 1.4; }
+        .type-badge { background: #5856d6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px; font-weight: bold; }
+        .loc-badge { background: rgba(0, 122, 255, 0.1); color: #007AFF; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px; font-weight: bold; }
 
-        /* ✕ 刪除按鈕外觀 */
+        .product-tag { background: #e5e5ea; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 4px; display: inline-block; margin-top: 2px; }
+
+        /* ✕ 刪除按鈕 */
         .btn-delete-group { 
             position: absolute; top: 12px; right: 12px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; 
             border: none; border-radius: 50%; width: 24px; height: 24px; padding: 0; font-size: 12px; 
-            font-weight: bold; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: 0.2s; 
+            font-weight: bold; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; 
         }
         .btn-delete-group:hover { background: #ff3b30; color: white; }
 
-        .group-card.expired { background: #e5e5ea; border-color: #d1d1d6; opacity: 0.6; transform: none !important; box-shadow: none !important; }
-        .group-card.expired .group-title { color: #8e8e93; }
-        .group-card.expired .group-count { background: #8e8e93; }
-
         .room-header { border-bottom: 2px solid #007AFF; padding-bottom: 10px; margin-bottom: 15px; }
         .room-title { font-size: 22px; font-weight: bold; color: #007AFF; }
-        .attendee-list { background: #f2f2f7; padding: 12px; border-radius: 8px; margin: 15px 0; min-height: 50px; }
-        
-        .tag-wrapper { display: inline-flex; align-items: center; background: #007AFF; color: white; border-radius: 6px; margin: 4px; padding-left: 10px; overflow: hidden; }
-        .tag-name { font-size: 14px; font-weight: 500; padding: 4px 0; }
-        
         .user-info-bar { text-align: right; font-size: 12px; color: #666; margin-bottom: 10px; }
         .divider { display: flex; align-items: center; text-align: center; color: #ccc; margin: 15px 0; font-size: 12px; }
         .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #eee; }
@@ -85,7 +83,7 @@
 <body>
 
     <div id="pageAuth" class="page active">
-        <h1>🔐 全台揪團系統</h1>
+        <h1>🔐 工作行程管理系統</h1>
         <div class="card">
             <h2 id="authTitle">帳號登入</h2>
             <div class="form-group">
@@ -94,13 +92,11 @@
             </div>
             <div class="form-group">
                 <label>密碼 Password</label>
-                <input type="password" id="authPassword" placeholder="請輸入至少 6 位數密碼">
+                <input type="password" id="authPassword" placeholder="請輸入密碼">
             </div>
             <button id="btnPrimaryAuth" onclick="handleAuth()">安全登入</button>
             <button class="btn-secondary" id="btnToggleAuth" onclick="toggleAuthMode()">沒有帳號？點此切換至註冊</button>
-            
             <div class="divider">或</div>
-            
             <button class="btn-google" onclick="handleGoogleLogin()">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo">
                 使用 Google 帳號快速登入
@@ -110,53 +106,109 @@
 
     <div id="pageHall" class="page">
         <div class="user-info-bar">歡迎，<span id="currentUserName">使用者</span> | <a href="#" onclick="logout()" style="color: #ff3b30;">登出</a></div>
-        <h1>💬 全台即時同步揪團大廳</h1>
+        <h1>📋 施工團隊排程大廳</h1>
 
         <div class="card">
-            <h2>➕ 開立一個新小群組</h2>
+            <h2>➕ 新增工作排程</h2>
+            
             <div class="form-group">
-                <label>聚會主題 / 群組名稱</label>
-                <input type="text" id="eventTitle" placeholder="例如：早上8點麥當勞吃早餐">
+                <label>工作大分類</label>
+                <div class="radio-tile-group">
+                    <label class="radio-label active" id="lblTypeMeasure">
+                        <input type="radio" name="jobType" value="丈量" checked onchange="toggleJobTypeFields()"> 📐 丈量
+                    </label>
+                    <label class="radio-label" id="lblTypeInstall">
+                        <input type="radio" name="jobType" value="安裝" onchange="toggleJobTypeFields()"> 🔧 安裝
+                    </label>
+                </div>
             </div>
+
             <div class="form-group">
-                <label>設定活動區域與縣市</label>
-                <div class="datetime-group">
+                <label>客戶名稱</label>
+                <input type="text" id="customerName" placeholder="例如：陳先生 - 客廳改建案">
+            </div>
+
+            <div class="form-group">
+                <label>工作地點 (區域 / 縣市 / 行政區)</label>
+                <div class="row-group">
                     <select id="eventRegion" onchange="updateFormCities()">
                         <option value="北部">北部地區</option>
                         <option value="中部">中部地區</option>
                         <option value="南部">南部地區</option>
-                        <option value="東部">東部地區</option>
-                        <option value="離島">離島地區</option>
                     </select>
-                    <select id="eventCity"></select>
+                    <select id="eventCity" onchange="updateFormDistricts()"></select>
+                    <select id="eventDistrict"></select>
                 </div>
+                <input type="text" id="detailedAddress" placeholder="請輸入手打詳細地址" style="margin-top: 8px;">
             </div>
+
             <div class="form-group">
-                <label>設定日期與時間</label>
-                <div class="datetime-group">
+                <label>預定施工日期與時間</label>
+                <div class="row-group">
                     <input type="date" id="eventDate">
                     <input type="time" id="eventTime">
                 </div>
             </div>
+
             <div class="form-group">
-                <label>集合地點</label>
-                <input type="text" id="eventLocation" placeholder="例如：某某餐廳或詳細地址">
+                <label>施作人員</label>
+                <input type="text" id="workerName" placeholder="例如：王師傅、李組長">
             </div>
-            <button onclick="createGroup()">發布並開立小群組</button>
+
+            <div class="form-group" id="installProductSection" style="display: none; background: #f2f2f7; padding: 12px; border-radius: 8px;">
+                <label>產品型式 (可動態新增多個)</label>
+                <div id="productInputsContainer">
+                    </div>
+                <button type="button" class="btn-add-product" onclick="addProductInputField()">＋ 新增產品型式</button>
+            </div>
+
+            <div class="form-group">
+                <label>進度狀態</label>
+                <div class="radio-tile-group">
+                    <label class="radio-label active-status" id="lblStatusUndone">
+                        <input type="radio" name="jobStatus" value="未完成" checked onchange="toggleStatusRadioClass()"> ⏳ 未完成
+                    </label>
+                    <label class="radio-label" id="lblStatusDone">
+                        <input type="radio" name="jobStatus" value="已完成" onchange="toggleStatusRadioClass()"> ✅ 已完成
+                    </label>
+                </div>
+            </div>
+
+            <button onclick="createJobSchedule()">發布並儲存行程</button>
         </div>
 
-        <h2>📋 目前已開立的小群組列表</h2>
-        
-        <div class="tabs-container">
-            <button class="tab-btn active" onclick="switchFilterTab('全部')">全部</button>
-            <button class="tab-btn" onclick="switchFilterTab('北部')">北部</button>
-            <button class="tab-btn" onclick="switchFilterTab('中部')">中部</button>
-            <button class="tab-btn" onclick="switchFilterTab('南部')">南部</button>
-            <button class="tab-btn" onclick="switchFilterTab('東部')">東部</button>
-            <button class="tab-btn" onclick="switchFilterTab('離島')">離島</button>
-        </div>
+        <h2>📋 行程篩選與列表</h2>
+        <div class="filter-section">
+            <div class="row-group">
+                <select id="filterType" onchange="renderGroupList()">
+                    <option value="全部">全部大分類 (丈量/安裝)</option>
+                    <option value="丈量">📐 僅看 丈量</option>
+                    <option value="安裝">🔧 僅看 安裝</option>
+                </select>
+                <select id="filterStatus" onchange="renderGroupList()">
+                    <option value="全部">全部進度狀態</option>
+                    <option value="未完成">⏳ 僅看 未完成</option>
+                    <option value="已完成">✅ 僅看 已完成</option>
+                </select>
+            </div>
+            
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="switchFilterTab('全部')">全部地區</button>
+                <button class="tab-btn" onclick="switchFilterTab('北部')">北部</button>
+                <button class="tab-btn" onclick="switchFilterTab('中部')">中部</button>
+                <button class="tab-btn" onclick="switchFilterTab('南部')">南部</button>
+            </div>
 
-        <div id="cityTagsFilter" class="city-tags-container"></div>
+            <div class="form-group" style="margin-bottom: 0; margin-top: 10px;">
+                <label style="font-size: 13px; color: #666;">📅 依工作日期範圍篩選：</label>
+                <div class="row-group">
+                    <input type="date" id="filterStartDate" onchange="renderGroupList()" placeholder="開始日期">
+                    <span style="align-self: center; color: #999;">至</span>
+                    <input type="date" id="filterEndDate" onchange="renderGroupList()" placeholder="結束日期">
+                    <button class="btn-secondary" onclick="clearDateFilter()" style="margin: 0; padding: 8px; width: auto; font-size: 13px;">清除日期</button>
+                </div>
+            </div>
+        </div>
 
         <div id="groupList"></div>
     </div>
@@ -164,24 +216,22 @@
     <div id="pageRoom" class="page">
         <div class="card">
             <div class="room-header">
-                <div class="room-title" id="roomTitle">活動小群組</div>
-                <div class="group-meta" id="roomMeta">時間 / 地點</div>
+                <div class="room-title" id="roomTitle">工作詳情</div>
+                <div id="roomStatusBadge" style="margin-top: 5px;"></div>
             </div>
-            
-            <h3>👥 目前群組參加人數：<span id="roomCount" style="color:#ff9500; font-size:22px;">0</span> 人</h3>
-            <div class="attendee-list" id="roomAttendees"></div>
-
-            <div style="margin-top:20px;">
-                <button class="btn-join" id="btnJoinOrLeave" onclick="handleToggleJoin()">我要報名參加</button>
+            <div class="group-meta" id="roomDetails" style="font-size: 16px; color: #333;">
+                </div>
+            <div style="margin-top:20px; display: flex; gap: 10px;">
+                <button class="btn-join" id="btnToggleJobStatus" onclick="handleToggleJobStatusServer()">切換完成狀態</button>
             </div>
-            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開小群組，回到大廳</button>
+            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 回到大廳列表</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDfEnsCez2ywbt0NQ4jPBUUr8oAIcIwyA0",
@@ -201,12 +251,21 @@
 
         const ADMIN_MASTER_PASSWORD = "admin888delete";
 
+        // 三級地理資料庫：區域 -> 縣市 -> 行政區
         const regionData = {
-            "北部": ["基隆市", "台北市", "新北市", "桃園市", "新竹市", "新竹縣", "宜蘭縣"],
-            "中部": ["苗栗縣", "台中市", "彰化縣", "投投縣", "雲林縣"],
-            "南部": ["嘉義市", "嘉義縣", "台南市", "高雄市", "屏東縣"],
-            "東部": ["花蓮縣", "台東縣"],
-            "離島": ["澎湖縣", "金門縣", "連江縣"]
+            "北部": {
+                "台北市": ["中正區", "大同區", "中山區", "松山區", "大安區", "萬華區", "信義區", "士林區", "北投區", "內湖區", "南港區", "文山區"],
+                "新北市": ["板橋區", "三重區", "中和區", "永和區", "新莊區", "新店區", "樹林區", "鶯歌區", "三峽區", "淡水區", "汐止區", "土城區", "蘆洲區"],
+                "桃園市": ["桃園區", "中壢區", "平鎮區", "八德區", "楊梅區", "蘆竹區", "大溪區", "龍潭區", "龜山區", "大園區"]
+            },
+            "中部": {
+                "台中市": ["中區", "東區", "南區", "西區", "北區", "北屯區", "西屯區", "南屯區", "太平區", "大里區", "霧峰區", "烏日區", "豐原區", "后里區", "清水區", "沙鹿區"],
+                "彰化縣": ["彰化市", "鹿港鎮", "和美鎮", "員林市", "溪湖鎮", "田中鎮", "二林鎮"]
+            },
+            "南部": {
+                "台南市": ["中西區", "東區", "南區", "北區", "安平區", "安南區", "永康區", "歸仁區", "新化區", "左鎮區", "玉井區", "楠西區", "南化區"],
+                "高雄市": ["新興區", "前金區", "苓雅區", "鹽埕區", "鼓山區", "旗津區", "前鎮區", "三民區", "楠梓區", "小港區", "左營區", "鳳山區", "岡山區", "旗山區"]
+            }
         };
 
         let isLoginMode = true; 
@@ -214,57 +273,113 @@
         let globalEvents = {};
         let currentRoomId = null;
         let currentFilterRegion = "全部";
-        let currentFilterCity = "全部";
         let dbUnsubscribe = null;
-        let securityCheckInterval = null; // 安全檢查計時器
+        let securityCheckInterval = null;
 
-        // 🚨 核心安全監聽：彈出視窗並登出
+        // UI 互動切換邏輯 (大分類變更)
+        window.toggleJobTypeFields = function() {
+            const selectedType = document.querySelector('input[name="jobType"]:checked').value;
+            const measureLbl = document.getElementById('lblTypeMeasure');
+            const installLbl = document.getElementById('lblTypeInstall');
+            const productSection = document.getElementById('installProductSection');
+
+            if(selectedType === "丈量") {
+                measureLbl.classList.add('active');
+                installLbl.classList.remove('active');
+                productSection.style.display = 'none';
+            } else {
+                measureLbl.classList.remove('active');
+                installLbl.classList.add('active');
+                productSection.style.display = 'block';
+                // 預設給一個輸入欄位
+                const container = document.getElementById('productInputsContainer');
+                if(container.children.length === 0) { addProductInputField(); }
+            }
+        };
+
+        // UI 互動切換邏輯 (狀態變更)
+        window.toggleStatusRadioClass = function() {
+            const status = document.querySelector('input[name="jobStatus"]:checked').value;
+            const undoneLbl = document.getElementById('lblStatusUndone');
+            const doneLbl = document.getElementById('lblStatusDone');
+            if(status === "未完成") {
+                undoneLbl.classList.add('active-status');
+                doneLbl.classList.remove('active-status');
+            } else {
+                undoneLbl.classList.remove('active-status');
+                doneLbl.classList.add('active-status');
+            }
+        };
+
+        // 動態增減產品型式欄位
+        window.addProductInputField = function() {
+            const container = document.getElementById('productInputsContainer');
+            const div = document.createElement('div');
+            div.className = 'product-item';
+            div.innerHTML = `
+                <input type="text" class="product-type-input" placeholder="例如：平開門、空間門、通風門">
+                <button type="button" class="btn-remove-product" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(div);
+        };
+
+        // 二級連動地理選單更新
+        window.updateFormCities = function() {
+            const region = document.getElementById('eventRegion').value;
+            const citySelect = document.getElementById('eventCity');
+            citySelect.innerHTML = '';
+            
+            Object.keys(regionData[region]).forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = city; opt.innerText = city;
+                citySelect.appendChild(opt);
+            });
+            updateFormDistricts();
+        };
+
+        window.updateFormDistricts = function() {
+            const region = document.getElementById('eventRegion').value;
+            const city = document.getElementById('eventCity').value;
+            const distSelect = document.getElementById('eventDistrict');
+            distSelect.innerHTML = '';
+
+            if(!city || !regionData[region][city]) return;
+
+            regionData[region][city].forEach(dist => {
+                const opt = document.createElement('option');
+                opt.value = dist; opt.innerText = dist;
+                distSelect.appendChild(opt);
+            });
+        };
+
+        // 安全防護
         function triggerForceLogout() {
-            // 清除計時器，防範重複跳窗
             if(securityCheckInterval) { clearInterval(securityCheckInterval); securityCheckInterval = null; }
-            alert("🔒 偵測到您的帳號權限已變更或已被系統停用，正在將您安全登出...");
+            alert("🔒 帳號安全性驗證已變更，正在重新初始化安全登入...");
             logout();
         }
 
-        // 🛡️ 背景主動巡邏員：主動向 Firebase 確認使用者當前狀態
-        function startSecurity巡邏(user) {
+        function startSecurity巡邏() {
             if(securityCheckInterval) clearInterval(securityCheckInterval);
-            
             securityCheckInterval = setInterval(async () => {
                 if (!auth.currentUser) return;
-                try {
-                    // 強制刷新憑證 Token，如果後台帳號被「停用（Disabled）」，這裡會直接報錯拋出異常
-                    await auth.currentUser.getIdTokenResult(true);
-                } catch (error) {
-                    // 只要報錯（例如：user-disabled 帳號被停用），立刻執行強制踢出
-                    triggerForceLogout();
-                }
-            }, 5000); // 每 5 秒巡邏一次，兼顧效能與即時性
+                try { await auth.currentUser.getIdTokenResult(true); } catch (e) { triggerForceLogout(); }
+            }, 6000);
         }
 
+        // 登入驗證
         window.handleAuth = async function() {
             const email = document.getElementById('authEmail').value.trim();
             const password = document.getElementById('authPassword').value;
             if(!email || !password) { alert('請完整填寫信箱與密碼！'); return; }
-
             try {
-                if(isLoginMode) {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } else {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    alert('註冊成功，已自動登入！');
-                }
-            } catch(error) {
-                alert('驗證失敗: ' + error.message);
-            }
+                if(isLoginMode) { await signInWithEmailAndPassword(auth, email, password); } 
+                else { await createUserWithEmailAndPassword(auth, email, password); alert('帳號註冊成功！'); }
+            } catch(e) { alert('驗證有誤: ' + e.message); }
         };
 
         window.handleGoogleLogin = async function() {
-            try {
-                await signInWithPopup(auth, googleProvider);
-            } catch (error) {
-                alert('Google 登入失敗: ' + error.message);
-            }
+            try { await signInWithPopup(auth, googleProvider); } catch (e) { alert('Google 登入失敗: ' + e.message); }
         };
 
         window.toggleAuthMode = function() {
@@ -286,233 +401,195 @@
                 document.getElementById('currentUserName').innerText = user.displayName || user.email.split('@')[0];
                 switchPage('hall');
                 listenToDatabase();
-                startSecurity巡邏(user); // 👈 登入成功，立刻啟動背景安全巡邏
+                startSecurity巡邏();
             } else {
                 currentUser = null;
-                if(securityCheckInterval) { clearInterval(securityCheckInterval); securityCheckInterval = null; }
                 switchPage('auth');
             }
         });
 
         function listenToDatabase() {
             if (dbUnsubscribe) dbUnsubscribe();
-            
-            const eventsRef = ref(db, 'events');
-            dbUnsubscribe = onValue(eventsRef, (snapshot) => {
+            dbUnsubscribe = onValue(ref(db, 'jobs'), (snapshot) => {
                 globalEvents = snapshot.val() || {};
                 renderGroupList();
                 if(currentRoomId) enterRoom(currentRoomId);
-            }, (error) => {
-                if (error && (error.message.includes("permission_denied") || error.code === "PERMISSION_DENIED")) {
-                    triggerForceLogout();
-                }
-            });
+            }, (err) => { triggerForceLogout(); });
         }
 
-        window.updateFormCities = function() {
+        // 儲存工作行程資料至 Firebase Database
+        window.createJobSchedule = function() {
+            const jobType = document.querySelector('input[name="jobType"]:checked').value;
+            const customerName = document.getElementById('customerName').value.trim();
             const region = document.getElementById('eventRegion').value;
-            const citySelect = document.getElementById('eventCity');
-            citySelect.innerHTML = '';
-            regionData[region].forEach(city => {
-                const opt = document.createElement('option');
-                opt.value = city; opt.innerText = city;
-                citySelect.appendChild(opt);
-            });
+            const city = document.getElementById('eventCity').value;
+            const district = document.getElementById('eventDistrict').value;
+            const detailedAddress = document.getElementById('detailedAddress').value.trim();
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const workerName = document.getElementById('workerName').value.trim();
+            const jobStatus = document.querySelector('input[name="jobStatus"]:checked').value;
+
+            if (!customerName || !date || !time || !workerName || !detailedAddress) { alert('請完整填寫工作行程表單（包含手打詳細地址）！'); return; }
+
+            // 收集安裝大分類下的所有動態產品型式
+            let productTypesList = [];
+            if(jobType === "安裝") {
+                const inputs = document.querySelectorAll('.product-type-input');
+                inputs.forEach(input => {
+                    if(input.value.trim() !== "") productTypesList.push(input.value.trim());
+                });
+                if(productTypesList.length === 0) { alert('請至少填寫一個產品型式！'); return; }
+            }
+
+            const newJobRef = push(ref(db, 'jobs'));
+            set(newJobRef, {
+                id: newJobRef.key,
+                creatorUid: currentUser.uid,
+                jobType: jobType,
+                customerName: customerName,
+                region: region, city: city, district: district, detailedAddress: detailedAddress,
+                date: date, time: time,
+                workerName: workerName,
+                productTypes: productTypesList,
+                jobStatus: jobStatus
+            }).catch(() => triggerForceLogout());
+
+            // 欄位清空重置
+            document.getElementById('customerName').value = '';
+            document.getElementById('detailedAddress').value = '';
+            document.getElementById('eventDate').value = '';
+            document.getElementById('eventTime').value = '';
+            document.getElementById('workerName').value = '';
+            document.getElementById('productInputsContainer').innerHTML = '';
+            if(jobType === "安裝") addProductInputField();
+            alert('工作行程已成功指派並建檔！');
         };
 
+        // 大廳過濾切換（區域篩選）
         window.switchFilterTab = function(regionName) {
             currentFilterRegion = regionName;
-            currentFilterCity = "全部";
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('active');
-                if(btn.innerText === regionName) btn.classList.add('active');
+                if(btn.innerText.includes(regionName)) btn.classList.add('active');
             });
-            renderCityTags();
             renderGroupList();
         };
 
-        function renderCityTags() {
-            const container = document.getElementById('cityTagsFilter');
-            container.innerHTML = '';
-            if (currentFilterRegion === "全部") return;
-
-            const allTag = document.createElement('span');
-            allTag.className = currentFilterCity === "全部" ? "city-tag active" : "city-tag";
-            allTag.innerText = "全部縣市";
-            allTag.onclick = () => {
-                currentFilterCity = "全部";
-                document.querySelectorAll('.city-tag').forEach(t => t.classList.remove('active'));
-                allTag.classList.add('active');
-                renderGroupList();
-            };
-            container.appendChild(allTag);
-
-            regionData[currentFilterRegion].forEach(city => {
-                const tag = document.createElement('span');
-                tag.className = currentFilterCity === city ? "city-tag active" : "city-tag";
-                tag.innerText = city;
-                tag.onclick = () => {
-                    currentFilterCity = city;
-                    document.querySelectorAll('.city-tag').forEach(t => t.classList.remove('active'));
-                    tag.classList.add('active');
-                    renderGroupList();
-                };
-                container.appendChild(tag);
-            });
-        }
-
-        window.createGroup = function() {
-            const title = document.getElementById('eventTitle').value.trim();
-            const region = document.getElementById('eventRegion').value;
-            const city = document.getElementById('eventCity').value;
-            const date = document.getElementById('eventDate').value;
-            const time = document.getElementById('eventTime').value;
-            const location = document.getElementById('eventLocation').value.trim();
-
-            if (!title || !date || !time || !location) { alert('請填寫完整群組資料！'); return; }
-
-            const newEventRef = push(ref(db, 'events'));
-            const nameToShow = currentUser.displayName || currentUser.email.split('@')[0];
-            
-            set(newEventRef, {
-                id: newEventRef.key,
-                creatorUid: currentUser.uid,
-                creatorEmail: nameToShow,
-                title: title, region: region, city: city, date: date, time: time, location: location
-            }).catch((error) => {
-                if (error && (error.message.includes("permission_denied") || error.code === "PERMISSION_DENIED")) {
-                    triggerForceLogout();
-                }
-            });
-
-            document.getElementById('eventTitle').value = '';
-            document.getElementById('eventDate').value = '';
-            document.getElementById('eventTime').value = '';
-            document.getElementById('eventLocation').value = '';
+        // 日期篩選清除
+        window.clearDateFilter = function() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            renderGroupList();
         };
 
-        function isEventExpired(dateStr, timeStr) {
-            if (!dateStr || !timeStr) return false;
-            return new Date() > new Date(`${dateStr}T${timeStr}`);
-        }
-
+        // 渲染與多重交叉過濾行程列表 (分類、狀態、北中南、日期範圍)
         function renderGroupList() {
             const listDiv = document.getElementById('groupList');
             listDiv.innerHTML = '';
             
-            const eventKeys = Object.keys(globalEvents);
-            if (eventKeys.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">目前大廳空空如也。</p>';
+            const keys = Object.keys(globalEvents);
+            if (keys.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">目前尚無排定的工作行程。</p>';
                 return;
             }
 
+            const selType = document.getElementById('filterType').value;
+            const selStatus = document.getElementById('filterStatus').value;
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+
             let hasContent = false;
-            eventKeys.reverse().forEach(key => {
-                const group = globalEvents[key];
-                if (currentFilterRegion !== "全部" && group.region !== currentFilterRegion) return;
-                if (currentFilterCity !== "全部" && group.city !== currentFilterCity) return;
+
+            keys.reverse().forEach(key => {
+                const job = globalEvents[key];
+
+                // 交叉過濾條件審查
+                if (selType !== "全部" && job.jobType !== selType) return;
+                if (selStatus !== "全部" && job.jobStatus !== selStatus) return;
+                if (currentFilterRegion !== "全部" && job.region !== currentFilterRegion) return;
+                
+                // 日期範圍條件篩選
+                if (startDate && job.date < startDate) return;
+                if (endDate && job.date > endDate) return;
 
                 hasContent = true;
-                const count = group.attendees ? Object.keys(group.attendees).length : 0;
                 const card = document.createElement('div');
-                const expired = isEventExpired(group.date, group.time);
-                card.className = expired ? 'group-card expired' : 'group-card';
-                
+                card.className = 'group-card';
                 card.onclick = (e) => {
                     if (e.target.tagName === 'BUTTON') return;
-                    if (expired) { alert('該活動已過期關閉。'); return; }
-                    switchPage('room', group.id);
+                    switchPage('room', job.id);
                 };
 
-                const deleteBtn = `<button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}', '${group.creatorUid}')">✕</button>`;
+                const statusClass = job.jobStatus === "已完成" ? "status-badge status-done" : "status-badge status-undone";
+                
+                // 處理多個產品型式標籤的顯示
+                let productsHtml = '';
+                if(job.jobType === "安裝" && job.productTypes) {
+                    productsHtml = '<div style="margin-top:5px;">';
+                    job.productTypes.forEach(p => { productsHtml += `<span class="product-tag">📦 ${p}</span>`; });
+                    productsHtml += '</div>';
+                }
 
                 card.innerHTML = `
-                    ${deleteBtn}
+                    <button class="btn-delete-group" onclick="deleteJobScheduleServer(event, '${job.id}', '${job.creatorUid}')">✕</button>
                     <div class="group-title">
-                        <span><span class="city-badge">${group.city}</span>${group.title}</span>
-                        <span class="group-count">成員 ${count} 人</span>
+                        <span><span class="type-badge">${job.jobType}</span>${job.customerName}</span>
+                        <span class="${statusClass}">${job.jobStatus}</span>
                     </div>
-                    <div class="group-meta">📅 時間：${group.date} ${group.time} | 👤 主辦：${group.creatorEmail}</div>
-                    <div class="group-meta">📍 地點：${group.location}</div>
+                    <div class="group-meta">
+                        📅 預定日期：<b>${job.date} ${job.time}</b><br>
+                        📍 地點：<span class="loc-badge">${job.city}${job.district}</span>${job.detailedAddress}<br>
+                        👷 施作工班人員：<b>${job.workerName}</b>
+                    </div>
+                    ${productsHtml}
                 `;
                 listDiv.appendChild(card);
             });
 
-            if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">此分類目前沒有小群組。</p>';
+            if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">沒有符合篩選條件的工作排程。</p>';
         }
 
-        window.deleteGroup = function(event, roomId, creatorUid) {
+        // 強制刪除工程行程
+        window.deleteJobScheduleServer = function(event, jobId, creatorUid) {
             event.stopPropagation();
-            if (!currentUser) { alert('請先登入帳號！'); return; }
-            if (currentUser.uid === creatorUid) {
-                if (confirm('您確定要永久刪除這個由您開立的小群組嗎？')) {
-                    remove(ref(db, 'events/' + roomId)).catch((err) => { triggerForceLogout(); });
-                    alert('已成功刪除您的群組！');
-                }
-                return;
-            }
-            const adminInput = prompt('非本人創立之群組。若您是系統管理員，請輸入「管理者刪除密碼」：');
-            if (adminInput === null) return;
-            if (adminInput === ADMIN_MASTER_PASSWORD) {
-                if (confirm('【最高權限認證成功】確定要強制刪除此用戶開立的小群組嗎？')) {
-                    remove(ref(db, 'events/' + roomId)).catch((err) => { triggerForceLogout(); });
-                    alert('管理員已強制刪除該群組！');
-                }
-            } else {
-                alert('密碼錯誤！您沒有權限刪除其他人的小群組。');
+            if (currentUser.uid === creatorUid || confirm('確認是否要刪除此工作排程項目？')) {
+                remove(ref(db, 'jobs/' + jobId)).catch(() => triggerForceLogout());
             }
         };
 
-        function enterRoom(roomId) {
-            const group = globalEvents[roomId];
-            if (!group) { goBackToHall(); return; }
+        // 詳細行程房間摘要渲染
+        function enterRoom(jobId) {
+            const job = globalEvents[jobId];
+            if (!job) { goBackToHall(); return; }
 
-            document.getElementById('roomTitle').innerText = `💬 [${group.city}] ${group.title}`;
-            document.getElementById('roomMeta').innerHTML = `📅 時間：${group.date} ${group.time}<br>📍 地點：${group.location}`;
+            document.getElementById('roomTitle').innerText = `【${job.jobType}工程】${job.customerName}`;
             
-            const attendees = group.attendees || {};
-            const attendeeKeys = Object.keys(attendees);
-            document.getElementById('roomCount').innerText = attendeeKeys.length;
-            
-            const attendeesDiv = document.getElementById('roomAttendees');
-            attendeesDiv.innerHTML = '';
-            
-            let isAmIIn = false;
-            attendeeKeys.forEach(key => {
-                if(attendees[key].uid === currentUser.uid) isAmIIn = true;
-                const wrapper = document.createElement('div');
-                wrapper.className = 'tag-wrapper';
-                wrapper.innerHTML = `<span class="tag-name" style="padding-right:10px;">👤 ${attendees[key].name}</span>`;
-                attendeesDiv.appendChild(wrapper);
-            });
+            const statusBadge = document.getElementById('roomStatusBadge');
+            statusBadge.innerHTML = job.jobStatus === "已完成" 
+                ? '<span class="status-badge status-done" style="font-size:14px;">✅ 行程進度：已完成</span>' 
+                : '<span class="status-badge status-undone" style="font-size:14px;">⏳ 行程進度：未完成</span>';
 
-            if(attendeeKeys.length === 0) attendeesDiv.innerHTML = '<p style="color:#999; text-align:center; margin:0;">目前群組尚無成員。</p>';
-
-            const btn = document.getElementById('btnJoinOrLeave');
-            if(isAmIIn) {
-                btn.innerText = "❌ 我要退出此群組";
-                btn.style.background = "#ff3b30";
-            } else {
-                btn.innerText = "➕ 我要報名參加";
-                btn.style.background = "#34c759";
+            let productStr = '';
+            if(job.jobType === "安裝" && job.productTypes) {
+                productStr = `<p><b>📦 指定安裝產品型式：</b><br>` + job.productTypes.map(p => ` - ${p}`).join('<br>') + `</p>`;
             }
+
+            document.getElementById('roomDetails').innerHTML = `
+                <p><b>📅 施工日期：</b>${job.date}</p>
+                <p><b>⏰ 施工時間：</b>${job.time}</p>
+                <p><b>📍 工作派遣地點：</b>[${job.region}] ${job.city} ${job.district} ${job.detailedAddress}</p>
+                <p><b>👷 現場施作人員：</b>${job.workerName}</p>
+                ${productStr}
+            `;
         }
 
-        window.handleToggleJoin = function() {
-            const group = globalEvents[currentRoomId];
-            if(!group) return;
-            const attendees = group.attendees || {};
-            const myJoinKey = Object.keys(attendees).find(k => attendees[k].uid === currentUser.uid);
-
-            if(myJoinKey) {
-                if(confirm('確定要退出此活動群組嗎？')) {
-                    remove(ref(db, `events/${currentRoomId}/attendees/${myJoinKey}`)).catch((err) => { triggerForceLogout(); });
-                }
-            } else {
-                const name = currentUser.displayName || currentUser.email.split('@')[0];
-                const newAttendeeRef = push(ref(db, `events/${currentRoomId}/attendees`));
-                set(newAttendeeRef, { uid: currentUser.uid, name: name }).catch((err) => { triggerForceLogout(); });
-            }
+        // 在詳細頁面一鍵快速切換「已完成 / 未完成」狀態並回傳雲端
+        window.handleToggleJobStatusServer = function() {
+            const job = globalEvents[currentRoomId];
+            if(!job) return;
+            const nextStatus = job.jobStatus === "已完成" ? "未完成" : "已完成";
+            update(ref(db, `jobs/${currentRoomId}`), { jobStatus: nextStatus }).catch(() => triggerForceLogout());
         };
 
         window.goBackToHall = function() { switchPage('hall'); };
@@ -525,6 +602,7 @@
             if(pageName === 'room') { document.getElementById('pageRoom').classList.add('active'); enterRoom(roomId); }
         }
 
+        // 啟動初始化選單連動
         updateFormCities();
     </script>
 </body>
