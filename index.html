@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>工作行程安排與管理系統 - 團隊內部專用版</title>
 
+    <!-- 🚀 自動偵測並跳出 LINE 內建瀏覽器 -->
     <script>
         if (navigator.userAgent.indexOf('Line') > -1) {
             var currentUrl = window.location.href;
@@ -97,6 +98,9 @@
         .room-header { border-bottom: 2px solid #007AFF; padding-bottom: 10px; margin-bottom: 15px; }
         .room-title { font-size: 22px; font-weight: bold; color: #007AFF; }
         .user-info-bar { text-align: right; font-size: 12px; color: #666; margin-bottom: 10px; }
+        
+        .phone-link { color: #007AFF; font-weight: bold; text-decoration: none; }
+        .phone-link:hover { text-decoration: underline; }
 
         @media (max-width: 850px) {
             .main-container { flex-direction: column; }
@@ -106,6 +110,7 @@
 </head>
 <body>
 
+    <!-- ================= 頁面零：限定內部登入頁面 ================= -->
     <div id="pageAuth" class="page active">
         <h1>🏢 團隊內部排程管理系統</h1>
         <div class="card">
@@ -122,12 +127,14 @@
         </div>
     </div>
 
+    <!-- ================= 頁面一：行程大廳 ================= -->
     <div id="pageHall" class="page">
         <div class="user-info-bar">目前登入：<b id="currentUserName" style="color:#007AFF;">成員</b> | <a href="#" onclick="logout()" style="color: #ff3b30; font-weight: bold; text-decoration: none;">🚪 安全登出</a></div>
         <h1>📋 全台施工團隊排程控制台</h1>
 
         <div class="main-container">
             
+            <!-- 【左欄：新增行程表單區】 -->
             <div class="left-col">
                 <div class="card">
                     <h2>➕ 新增工作排程</h2>
@@ -147,6 +154,7 @@
                         </div>
                     </div>
 
+                    <!-- 自動顯示發布人 -->
                     <div class="form-group">
                         <label>工作發布人員 (系統自動鎖定)</label>
                         <input type="text" id="displayCreator" readonly style="background: #e5e5ea; color: #555; font-weight: bold;">
@@ -155,6 +163,12 @@
                     <div class="form-group">
                         <label>客戶名稱</label>
                         <input type="text" id="customerName" placeholder="例如：陳先生 - 客廳改建案">
+                    </div>
+
+                    <!-- 📞 新增的客戶電話欄位 -->
+                    <div class="form-group">
+                        <label>客戶電話</label>
+                        <input type="tel" id="customerPhone" placeholder="例如：0912-345-678">
                     </div>
 
                     <div class="form-group">
@@ -219,6 +233,7 @@
                 </div>
             </div>
 
+            <!-- 【右欄：行程篩選與列表大廳】 -->
             <div class="right-col">
                 <h2>📋 行程篩選與即時列表</h2>
                 <div class="filter-section">
@@ -256,16 +271,19 @@
                     </div>
                 </div>
 
+                <!-- 運作中行程列表 -->
                 <div id="groupList"></div>
             </div>
         </div>
 
+        <!-- ================= 🗑️ 資源回收桶專區（全寬置底） ================= -->
         <div class="trash-section">
             <h2>🗑️ 資源回收桶 <span style="font-size:14px; font-weight:normal; color:#e74c3c;">(僅保留10天，過期自動永久刪除)</span></h2>
             <div id="trashList"></div>
         </div>
     </div>
 
+    <!-- ================= 頁面二：詳細工作摘要頁面 ================= -->
     <div id="pageRoom" class="page">
         <div class="card" style="max-width: 650px; margin: 0 auto;">
             <div class="room-header">
@@ -280,6 +298,7 @@
         </div>
     </div>
 
+    <!-- ================= Firebase 與排程系統核心邏輯 ================= -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -364,7 +383,7 @@
 
         function loginSuccessAction() {
             document.getElementById('currentUserName').innerText = currentUser.name;
-            document.getElementById('displayCreator').value = currentUser.name; // 連動發布者欄位
+            document.getElementById('displayCreator').value = currentUser.name; 
             switchPage('hall');
             listenToDatabase();
         }
@@ -472,6 +491,7 @@
         window.createJobSchedule = function() {
             const jobType = document.querySelector('input[name="jobType"]:checked').value;
             const customerName = document.getElementById('customerName').value.trim();
+            const customerPhone = document.getElementById('customerPhone').value.trim(); // 📞 新增電話取值
             const region = document.getElementById('eventRegion').value;
             const city = document.getElementById('eventCity').value;
             const district = document.getElementById('eventDistrict').value;
@@ -481,7 +501,8 @@
             const workerName = document.getElementById('workerName').value.trim();
             const jobStatus = document.querySelector('input[name="jobStatus"]:checked').value;
 
-            if (!customerName || !date || !time || !workerName || !detailedAddress) { alert('請完整填寫必要欄位！'); return; }
+            // 把電話也加入必填防呆
+            if (!customerName || !customerPhone || !date || !time || !workerName || !detailedAddress) { alert('請完整填寫所有必要欄位（包含客戶電話）！'); return; }
 
             let productTypesList = [];
             if(jobType === "安裝") {
@@ -502,9 +523,10 @@
             set(newJobRef, {
                 id: newJobRef.key,
                 creatorUid: currentUser.uid,
-                creatorName: currentUser.name, // 自動鎖定發布人為當前登入者
+                creatorName: currentUser.name, 
                 jobType: jobType,
                 customerName: customerName,
+                customerPhone: customerPhone, // 📞 寫入資料庫
                 region: region, city: city, district: district, detailedAddress: detailedAddress,
                 date: date, time: time,
                 workerName: workerName,
@@ -514,7 +536,9 @@
                 jobStatus: jobStatus
             });
 
+            // 清空表單
             document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = ''; // 📞 清空電話欄位
             document.getElementById('detailedAddress').value = '';
             document.getElementById('eventDate').value = '';
             document.getElementById('eventTime').value = '';
@@ -570,7 +594,7 @@
                 hasContent = true;
                 const card = document.createElement('div');
                 card.className = 'group-card';
-                card.onclick = (e) => { if (e.target.tagName === 'BUTTON') return; switchPage('room', job.id); };
+                card.onclick = (e) => { if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return; switchPage('room', job.id); };
 
                 const statusClass = job.jobStatus === "已完成" ? "status-badge status-done" : "status-badge status-undone";
                 
@@ -599,6 +623,7 @@
                         <span class="${statusClass}">${job.jobStatus}</span>
                     </div>
                     <div class="group-meta">
+                        📞 客戶電話：<b>${job.customerPhone || '未提供'}</b><br>
                         📅 預定時間：<b>${job.date} ${job.time}</b> (發布人: ${job.creatorName || '未指定'})<br>
                         📍 派工地點：<span class="loc-badge">${job.city || ''}${job.district || ''}</span>${job.detailedAddress || ''}<br>
                         👷 現場人員：<b>${job.workerName}</b>
@@ -611,25 +636,23 @@
             if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">沒有符合篩選條件的工作排程。</p>';
         }
 
-        // 🗑️ 刪除排程：轉移至回收桶，並帶入刪除者資訊
+        // 🗑️ 刪除排程
         window.deleteJobScheduleServer = function(event, jobId) {
             event.stopPropagation();
             if (confirm('確認是否要把此工作排程移到回收桶？')) {
                 const jobData = globalEvents[jobId];
                 if (!jobData) return;
 
-                // 注入刪除數據
                 jobData.deletedBy = currentUser.name;
                 jobData.deletedAt = Date.now();
 
-                // 寫入回收桶並移除線上行程
                 set(ref(db, 'trash/' + jobId), jobData).then(() => {
                     remove(ref(db, 'jobs/' + jobId));
                 });
             }
         };
 
-        // 📋 渲染資源回收桶列表
+        // 📋 渲染資源回收桶
         function renderTrashList() {
             const trashDiv = document.getElementById('trashList');
             trashDiv.innerHTML = '';
@@ -643,7 +666,6 @@
             keys.reverse().forEach(key => {
                 const item = globalTrash[key];
                 
-                // 計算剩餘天數 (10天限制)
                 const msPassed = Date.now() - item.deletedAt;
                 const daysLeft = Math.max(0, Math.ceil((10 * 24 * 60 * 60 * 1000 - msPassed) / (1000 * 60 * 60 * 24)));
 
@@ -656,7 +678,7 @@
                         <span class="status-badge" style="background:#e74c3c;">⏳ 剩餘 ${daysLeft} 天自動清除</span>
                     </div>
                     <div class="group-meta" style="color:#777;">
-                        📅 原預定：${item.date} ${item.time} | 👷 人員：${item.workerName}<br>
+                        📞 電話：${item.customerPhone || '未提供'} | 📅 原預定：${item.date} ${item.time}<br>
                         🛑 原始發布：<b>${item.creatorName || '未知'}</b> | 🔴 <b style="color:#d63031;">由【${item.deletedBy || '未知'}】刪除</b>
                     </div>
                     <div class="trash-ops">
@@ -673,7 +695,6 @@
             const data = globalTrash[jobId];
             if (!data) return;
 
-            // 清除刪除標記並還原
             delete data.deletedBy;
             delete data.deletedAt;
 
@@ -690,7 +711,7 @@
             }
         };
 
-        // ⏳ 自動排程：過期（超過10天）自動永久清除
+        // ⏳ 自動清除過期回收桶
         function checkAndCleanExpiredTrash() {
             const keys = Object.keys(globalTrash);
             const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
@@ -699,11 +720,12 @@
             keys.forEach(key => {
                 const item = globalTrash[key];
                 if (item.deletedAt && (now - item.deletedAt > tenDaysMs)) {
-                    remove(ref(db, 'trash/' + key)); // 超過10天，直接在後台抹除
+                    remove(ref(db, 'trash/' + key)); 
                 }
             });
         }
 
+        // 進入工作詳情頁面
         function enterRoom(jobId) {
             const job = globalEvents[jobId];
             if (!job) { goBackToHall(); return; }
@@ -728,7 +750,11 @@
                 `;
             }
 
+            // 📞 手機點擊即可撥號的設計
+            const phoneLinkHtml = job.customerPhone ? `<a href="tel:${job.customerPhone}" class="phone-link">${job.customerPhone}</a>` : '未提供';
+
             document.getElementById('roomDetails').innerHTML = `
+                <p><b>📞 客戶電話：</b>${phoneLinkHtml}</p>
                 <p><b>📅 施工日期：</b>${job.date}</p>
                 <p><b>⏰ 施工時間：</b>${job.time}</p>
                 <p><b>📍 工作派遣地點：</b>[${job.region || ''}] ${job.city || ''} ${job.district || ''} ${job.detailedAddress || ''}</p>
