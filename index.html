@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全台揪團小群組系統 - 朋友專屬版</title>
+    <title>高雄脆飯團群聚系統 - 朋友專屬版</title>
 
-    <meta property="og:title" content="全台揪團小群組系統">
-    <meta property="og:description" content="全台即時同步揪團大廳，快來加入或開立屬於你的小群組吧！">
+    <meta property="og:title" content="高雄脆飯團群聚系統">
+    <meta property="og:description" content="高雄脆飯團群聚大廳，快來加入或開立屬於你的群組吧！">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://buildwithlegend.github.io/dinner-gathering/">
     <meta property="og:image" content="https://buildwithlegend.github.io/dinner-gathering/share-cover.png">
@@ -113,7 +113,7 @@
 <body>
 
     <div id="pageAuth" class="page active">
-        <h1>🔐 全台揪團系統</h1>
+        <h1>🔐 高雄脆飯團群聚系統</h1>
         <div class="card">
             <h2 id="authTitle">帳號登入</h2>
             <div class="form-group">
@@ -144,10 +144,10 @@
     <div id="pageHall" class="page">
         <div class="user-info-bar">歡迎，<span id="currentUserName">使用者</span> |
         <a href="#" onclick="logout()" style="color: #ff3b30;">登出</a></div>
-        <h1>💬 全台即時同步揪團大廳</h1>
+        <h1>💬 高雄脆飯團群聚系統大廳</h1>
 
         <div class="card">
-            <h2>➕ 開立一個新小群組</h2>
+            <h2>➕ 開立一個新群組</h2>
             <div class="form-group">
                 <label>聚會主題 / 群組名稱</label>
                 <input type="text" id="eventTitle" placeholder="例如：早上8點麥當料吃早餐">
@@ -176,7 +176,7 @@
                 <label>集合地點</label>
                 <input type="text" id="eventLocation" placeholder="例如：某某餐廳或詳細地址">
             </div>
-            <button onclick="createGroup()">發布並開立小群組</button>
+            <button onclick="createGroup()">發布並開立群組</button>
         </div>
 
         <h2>📋 目前已開立的小群組列表</h2>
@@ -217,7 +217,7 @@
     <div id="pageRoom" class="page">
         <div class="card">
             <div class="room-header">
-                <div class="room-title" id="roomTitle">活動小群組</div>
+                <div class="room-title" id="roomTitle">活動群組</div>
                 <div class="group-meta" id="roomMeta">時間 / 地點</div>
             </div>
             
@@ -227,7 +227,7 @@
             <div style="margin-top:20px;">
                 <button class="btn-join" id="btnJoinOrLeave" onclick="handleToggleJoin()">我要報名參加</button>
             </div>
-            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開小群組，回到大廳</button>
+            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開群組，回到大廳</button>
         </div>
     </div>
 
@@ -552,14 +552,14 @@
                 listDiv.appendChild(card);
             });
 
-            if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">此分類目前沒有小群組。</p>';
+            if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">此分類目前沒有群組。</p>';
         }
 
         window.deleteGroup = function(event, roomId, creatorUid) {
             event.stopPropagation();
             if (!currentUser) { alert('請先登入帳號！'); return; }
             if (currentUser.uid === creatorUid) {
-                if (confirm('您確定要永久刪除這個由您開立的小群組嗎？')) {
+                if (confirm('您確定要永久刪除這個由您開立的群組嗎？')) {
                     remove(ref(db, 'events/' + roomId)).catch((err) => { triggerForceLogout(); });
                     alert('已成功刪除您的群組！');
                 }
