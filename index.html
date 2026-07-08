@@ -3,238 +3,395 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高雄脆飯團群聚系統 - 朋友專屬版</title>
+    <title>工作行程安排與管理系統 - 團隊內部專用版</title>
 
-    <meta property="og:title" content="高雄脆飯團群聚系統">
-    <meta property="og:description" content="高雄脆飯團群聚大廳，快來加入或開立屬於你的群組吧！">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://buildwithlegend.github.io/dinner-gathering/">
-    <meta property="og:image" content="https://buildwithlegend.github.io/dinner-gathering/share-cover.png">
-
-    <link rel="icon" href="https://buildwithlegend.github.io/dinner-gathering/share-cover.png" type="image/png">
-    <link rel="apple-touch-icon" href="https://buildwithlegend.github.io/dinner-gathering/share-cover.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🚀 自動偵測並跳出 LINE 內建瀏覽器 -->
+    <script>
+        if (navigator.userAgent.indexOf('Line') > -1) {
+            var currentUrl = window.location.href;
+            if (currentUrl.indexOf('openExternalBrowser=1') === -1) {
+                if (currentUrl.indexOf('?') > -1) {
+                    window.location.href = currentUrl + '&openExternalBrowser=1';
+                } else {
+                    window.location.href = currentUrl + '?openExternalBrowser=1';
+                }
+            }
+        }
+    </script>
 
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        max-width: 600px; margin: 20px auto; padding: 15px; background-color: #edeef2; color: #333; }
-        h1, h2, h3 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
-        .card { background: white; padding: 20px; border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
-        .form-group input, .form-group select { width: 100%; padding: 10px;
-        border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #f9f9f9; }
-        
-        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-size: 14px; color: #555; cursor: pointer; }
-        .checkbox-group input { width: auto; cursor: pointer; }
-
-        .datetime-group { display: flex; gap: 10px; }
-        .datetime-group input, .datetime-group select { flex: 1; }
-        
-        .page { display: none; }
-        .page.active { display: block; }
-
-        button { background: #007AFF; color: white; border: none; padding: 12px; font-size: 16px;
-        border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
-        button:hover { background: #0056b3; }
-        .btn-secondary { background: #8e8e93; margin-top: 10px; }
-        .btn-secondary:hover { background: #636366; }
-        .btn-google { background: #fff; color: #757575; border: 1px solid #ddd; margin-top: 15px;
-        display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .btn-google:hover { background: #f5f5f5; color: #333; }
-        .btn-google img { width: 18px; height: 18px; }
-        .btn-join { background: #34c759; }
-        .btn-join:hover { background: #28a745; }
-        
-        .tabs-container { display: flex;
-        gap: 5px; margin-bottom: 15px; background: #fff; padding: 6px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto; white-space: nowrap; }
-        .tab-btn { flex: 1; padding: 10px 15px; font-size: 14px; border: none;
-        background: transparent; color: #8e8e93; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; transition: 0.2s; min-width: 60px; width: auto; }
-        .tab-btn.active { background: #007AFF; color: white; }
-
-        .city-tags-container { display: flex;
-        flex-wrap: wrap; gap: 6px; margin-bottom: 15px; padding: 0 5px; }
-        .city-tag { background: #e5e5ea;
-        color: #333; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
-        .city-tag.active { background: #34c759; color: white; }
-
-        .group-card { background: white;
-        padding: 15px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 15px; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-        position: relative; }
-        .group-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-        border-color: #007AFF; }
-        
-        .group-title { font-size: 18px;
-        font-weight: bold; color: #1c1c1e; display: flex; justify-content: space-between; align-items: center; padding-right: 35px; }
-        .group-count { background: #ff9500; color: white; padding: 2px 8px; border-radius: 10px;
-        font-size: 12px; flex-shrink: 0; margin-left: 10px; }
-        .group-meta { font-size: 14px; color: #8e8e93; margin-top: 5px; }
-        .city-badge { background: rgba(0, 122, 255, 0.1); color: #007AFF;
-        padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px; font-weight: bold; white-space: nowrap; }
-
-        .btn-delete-group { 
-            position: absolute;
-            top: 12px; right: 12px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; 
-            border: none; border-radius: 50%; width: 24px; height: 24px;
-            padding: 0; font-size: 12px; 
-            font-weight: bold; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .btn-delete-group:hover { background: #ff3b30; color: white; }
-
-        .group-card.expired { background: #e5e5ea; border-color: #d1d1d6; opacity: 0.6; transform: none !important;
-        box-shadow: none !important; }
-        .group-card.expired .group-title { color: #8e8e93; }
-        .group-card.expired .group-count { background: #8e8e93; }
-
-        .room-header { border-bottom: 2px solid #007AFF; padding-bottom: 10px; margin-bottom: 15px; }
-        .room-title { font-size: 22px; font-weight: bold; color: #007AFF; }
-        .attendee-list { background: #f2f2f7; padding: 12px; border-radius: 8px; margin: 15px 0; min-height: 50px; }
-        
-        .tag-wrapper { display: inline-flex;
-        align-items: center; background: #007AFF; color: white; border-radius: 6px; margin: 4px; padding-left: 10px; overflow: hidden; }
-        .tag-name { font-size: 14px; font-weight: 500; padding: 4px 0; }
-        
-        .user-info-bar { text-align: right;
-        font-size: 12px; color: #666; margin-bottom: 10px; }
-        .divider { display: flex; align-items: center;
-        text-align: center; color: #ccc; margin: 15px 0; font-size: 12px; }
-        .divider::before, .divider::after { content: '';
-        flex: 1; border-bottom: 1px solid #eee; }
-        .divider:not(:empty)::before { margin-right: .25em; }
-        .divider:not(:empty)::after { margin-left: .25em; }
-        
-        /* 查詢帳密後台樣式（預設完全隱藏） */
-        .admin-trigger-bar { margin-top: 25px; text-align: center; }
-        .admin-box { background: #fff8eb; border: 1px dashed #ff9500; padding: 15px; border-radius: 12px; margin-top: 15px; display: none; }
-        .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        .user-table th, .user-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .user-table th { background: #ff9500; color: white; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #f1f5f9;
+        }
+        /* 美化滾動條 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
-<body>
+<body class="text-slate-800 antialiased min-h-screen pb-12">
 
-    <div id="pageAuth" class="page active">
-        <h1>🔐 高雄脆飯團群聚系統</h1>
-        <div class="card">
-            <h2 id="authTitle">帳號登入</h2>
-            <div class="form-group">
-                <label>電子信箱 Email</label>
-                <input type="email" id="authEmail" placeholder="example@email.com">
-            </div>
-            <div class="form-group">
-                <label>密碼 Password</label>
-                <input type="password" id="authPassword" placeholder="請輸入至少 6 位數密碼">
-            </div>
-            
-            <label class="checkbox-group">
-                <input type="checkbox" id="rememberMeCheckbox"> 記住我的帳號與密碼 (本機)
-            </label>
+    <!-- Toast 通知容器 -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-            <button id="btnPrimaryAuth" onclick="handleAuth()">安全登入</button>
-            <button class="btn-secondary" id="btnToggleAuth" onclick="toggleAuthMode()">沒有帳號？點此切換至註冊</button>
-        
-            <div class="divider">或</div>
-            
-            <button class="btn-google" onclick="handleGoogleLogin()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo">
-                使用 Google 帳號快速登入
-            </button>
+    <!-- 自訂 Confirm 彈窗 -->
+    <div id="customConfirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform scale-95 transition-all duration-200">
+            <div class="flex items-center gap-3 text-amber-500 mb-4">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                <h3 class="text-lg font-bold text-slate-900">確認執行此操作？</h3>
+            </div>
+            <p id="confirmMessage" class="text-slate-600 mb-6">您確定要執行這項操作嗎？此動作將會影響資料庫狀態。</p>
+            <div class="flex justify-end gap-3">
+                <button id="confirmCancelBtn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium text-sm transition">取消</button>
+                <button id="confirmOkBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition">確認執行</button>
+            </div>
         </div>
     </div>
 
-    <div id="pageHall" class="page">
-        <div class="user-info-bar">歡迎，<span id="currentUserName">使用者</span> |
-        <a href="#" onclick="logout()" style="color: #ff3b30;">登出</a></div>
-        <h1>💬 高雄脆飯團群聚系統大廳</h1>
-
-        <div class="card">
-            <h2>➕ 開立一個新群組</h2>
-            <div class="form-group">
-                <label>聚會主題 / 群組名稱</label>
-                <input type="text" id="eventTitle" placeholder="例如：早上8點麥當料吃早餐">
+    <!-- ================= 頁面零：限定內部登入頁面 ================= -->
+    <div id="pageAuth" class="page active flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 max-w-md w-full text-center">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+                <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <div class="form-group">
-                <label>設定活動區域與縣市</label>
-                <div class="datetime-group">
-                    <select id="eventRegion" onchange="updateFormCities()">
-                        <option value="北部">北部地區</option>
-                        <option value="中部">中部地區</option>
-                        <option value="南部">南部地區</option>
-                        <option value="東部">東部地區</option>
-                        <option value="離島">離島地區</option>
-                    </select>
-                    <select id="eventCity"></select>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">團隊內部排程管理</h1>
+            <p class="text-sm text-slate-500 mt-1 mb-8">請登入您的員工識別帳號以繼續操作</p>
+            
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">員工識別帳號</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa-regular fa-user"></i>
+                        </span>
+                        <input type="text" id="authAccount" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 transition text-sm" placeholder="請輸入 8 碼數字帳號">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">登入密碼</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input type="password" id="authPassword" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 transition text-sm" placeholder="請輸入密碼">
+                    </div>
+                </div>
+                <button onclick="handleInternalLogin()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-bold transition shadow-lg shadow-blue-500/20 mt-2">
+                    驗證安全登入
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 頁面一：行程大廳 ================= -->
+    <div id="pageHall" class="page hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        
+        <header class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-hard-hat"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black text-slate-900 leading-tight">全台施工團隊排程控制台</h1>
+                    <p class="text-xs text-slate-500">專用版行程管理與回顧系統</p>
                 </div>
             </div>
-            <div class="form-group">
-                <label>設定日期與時間</label>
-                <div class="datetime-group">
-                    <input type="date" id="eventDate">
-                    <input type="time" id="eventTime">
+            <div class="flex items-center gap-3 text-sm">
+                <span class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
+                    目前登入：<span id="currentUserName">成員</span>
+                </span>
+                <button onclick="logout()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-semibold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-door-open"></i>安全登出
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- ================= 【左欄：歷史工作紀錄 ＆ 新增行程】 (5/12) ================= -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- 📁 歷史工作紀錄卡片區塊 -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-indigo-600 text-lg"><i class="fa-solid fa-folder-open"></i></span>
+                            <h2 class="text-md font-bold text-slate-900">歷史工作紀錄 (已過期行程)[cite: 1]</h2>
+                        </div>
+                        <span id="historyCount" class="bg-indigo-50 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-bold">0 筆</span>
+                    </div>
+                    
+                    <!-- 搜尋欄位 -->
+                    <div class="relative mb-4">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input type="text" id="historySearchInput" oninput="renderHistoryList()" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-xs" placeholder="搜尋歷史客戶、電話、派工人員或地址...">
+                    </div>
+
+                    <!-- 歷史卡片容器 -->
+                    <div id="historyList" class="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                        <!-- 動態生成歷史紀錄卡片 -->
+                    </div>
+                </div>
+
+                <!-- ➕ 新增行程表單卡片 -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                        <span class="text-blue-600 text-lg"><i class="fa-solid fa-calendar-plus"></i></span>
+                        <h2 class="text-md font-bold text-slate-900">新增派工行程</h2>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- 大分類 -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1.5">工作大分類</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label id="lblTypeMeasure" class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer active font-semibold text-xs text-slate-600 select-none transition">
+                                    <input type="radio" name="jobType" value="丈量" checked onchange="toggleJobTypeFields()" class="hidden">
+                                    <span class="text-base mb-0.5">📐</span>丈量
+                                </label>
+                                <label id="lblTypeInstall" class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer font-semibold text-xs text-slate-600 select-none transition">
+                                    <input type="radio" name="jobType" value="安裝" onchange="toggleJobTypeFields()" class="hidden">
+                                    <span class="text-base mb-0.5">🔧</span>安裝
+                                </label>
+                                <label id="lblTypeRework" class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer font-semibold text-xs text-slate-600 select-none transition">
+                                    <input type="radio" name="jobType" value="二工" onchange="toggleJobTypeFields()" class="hidden">
+                                    <span class="text-base mb-0.5">⚠️</span>二工
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 系統發布人員 -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">工作發布人員 (自動代入)</label>
+                            <input type="text" id="displayCreator" readonly class="w-full px-3 py-2 bg-slate-100 text-slate-500 font-semibold border border-slate-200 rounded-xl text-sm outline-none">
+                        </div>
+
+                        <!-- 客戶名稱 ＆ 電話 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">客戶名稱</label>
+                                <input type="text" id="customerName" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-sm" placeholder="例如：陳先生">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">客戶電話</label>
+                                <input type="tel" id="customerPhone" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-sm" placeholder="例如：0912-345-678">
+                            </div>
+                        </div>
+
+                        <!-- 工作地點 -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">工作地點區域</label>
+                            <div class="grid grid-cols-3 gap-1.5 mb-2">
+                                <select id="eventRegion" onchange="updateFormCities()" class="px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500">
+                                    <option value="北部">北部</option>
+                                    <option value="中部">中部</option>
+                                    <option value="南部">南部</option>
+                                    <option value="東部">東部</option>
+                                    <option value="離島">離島</option>
+                                </select>
+                                <select id="eventCity" onchange="updateFormDistricts()" class="px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"></select>
+                                <select id="eventDistrict" class="px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"></select>
+                            </div>
+                            <input type="text" id="detailedAddress" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-sm" placeholder="請輸入詳細地址路名門牌">
+                        </div>
+
+                        <!-- 日期時間 -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">預定施工日期</label>
+                                <input type="date" id="eventDate" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">時間</label>
+                                <input type="time" id="eventTime" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-sm">
+                            </div>
+                        </div>
+
+                        <!-- 施作人員 -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">現場施作人員</label>
+                            <input type="text" id="workerName" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-sm" placeholder="例如：王師傅、李組長">
+                        </div>
+
+                        <!-- 動態產品區塊 (限安裝) -->
+                        <div id="installProductSection" class="hidden bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                            <label class="block text-xs font-bold text-slate-600">產品型式</label>
+                            <div id="productInputsContainer" class="space-y-1.5"></div>
+                            <button type="button" onclick="addProductInputField()" class="w-full py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-plus"></i>新增產品種類
+                            </button>
+                        </div>
+
+                        <!-- 異常追蹤區塊 (限二工) -->
+                        <div id="reworkSection" class="hidden bg-rose-50/50 p-3.5 rounded-xl border border-rose-100 space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-rose-700 mb-1">二工原因說明</label>
+                                <textarea id="reworkReason" rows="2" class="w-full px-3 py-1.5 bg-white border border-rose-200 rounded-xl focus:outline-none focus:border-rose-500 text-sm" placeholder="請詳細描述此次補件或二工原因"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-rose-700 mb-1">責任出錯人 / 單位</label>
+                                <input type="text" id="errorWorker" class="w-full px-3 py-1.5 bg-white border border-rose-200 rounded-xl focus:outline-none focus:border-rose-500 text-sm" placeholder="例如：廠端製造、丈量失誤">
+                            </div>
+                        </div>
+
+                        <!-- 行程狀態 -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1.5">進度狀態</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label id="lblStatusUndone" class="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer active-status font-bold text-xs select-none transition">
+                                    <input type="radio" name="jobStatus" value="未完成" checked onchange="toggleStatusRadioClass()" class="hidden">
+                                    <span>⏳</span>未完成
+                                </label>
+                                <label id="lblStatusDone" class="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer font-bold text-xs select-none transition">
+                                    <input type="radio" name="jobStatus" value="已完成" onchange="toggleStatusRadioClass()" class="hidden">
+                                    <span>✅</span>已完成
+                                </label>
+                            </div>
+                        </div>
+
+                        <button onclick="createJobSchedule()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i>指派並發布行程
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ================= 【右欄：行程篩選與即時列表】 (7/12) ================= -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- 篩選器控制面板 -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="text-slate-600 text-lg"><i class="fa-solid fa-sliders"></i></span>
+                        <h2 class="text-md font-bold text-slate-900">即時行程篩選器</h2>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <select id="filterType" onchange="renderGroupList()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 font-semibold">
+                                <option value="全部">📌 全部工種分類</option>
+                                <option value="丈量">📐 僅看 丈量</option>
+                                <option value="安裝">🔧 僅看 安裝</option>
+                                <option value="二工">⚠️ 僅看 二工</option>
+                            </select>
+                            <select id="filterStatus" onchange="renderGroupList()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 font-semibold">
+                                <option value="全部">📊 全部進度狀態</option>
+                                <option value="未完成">⏳ 僅看 未完成</option>
+                                <option value="已完成">✅ 僅看 已完成</option>
+                            </select>
+                        </div>
+
+                        <!-- 地區水平切換籤頁 -->
+                        <div class="flex gap-1.5 overflow-x-auto pb-1 pt-0.5 border-b border-slate-100">
+                            <button class="tab-btn active px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap transition" onclick="switchFilterTab('全部')">全部地區</button>
+                            <button class="tab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap transition" onclick="switchFilterTab('北部')">北部</button>
+                            <button class="tab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap transition" onclick="switchFilterTab('中部')">中部</button>
+                            <button class="tab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap transition" onclick="switchFilterTab('南部')">南部</button>
+                            <button class="tab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap transition" onclick="switchFilterTab('東部')">東部</button>
+                            <button class="tab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap transition" onclick="switchFilterTab('離島')">離島</button>
+                        </div>
+
+                        <!-- 日期篩選區 -->
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-1 text-xs">
+                            <span class="font-bold text-slate-500"><i class="fa-regular fa-calendar-days mr-1"></i>按施工日期篩選：</span>
+                            <div class="flex items-center gap-1.5 w-full sm:w-auto">
+                                <input type="date" id="filterStartDate" onchange="renderGroupList()" class="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                                <span class="text-slate-400">至</span>
+                                <input type="date" id="filterEndDate" onchange="renderGroupList()" class="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                                <button onclick="clearDateFilter()" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg font-bold transition">重置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <h2 class="text-md font-bold text-slate-900 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            執行中施工行程列表
+                        </h2>
+                        <span id="activeCount" class="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-bold">0 筆項目</span>
+                    </div>
+                    <div id="groupList" class="space-y-4">
+                        <!-- 動態行程卡片 -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ================= 🗑️ 資源回收桶專區（全寬置底） ================= -->
+        <div class="mt-8 bg-rose-50/40 rounded-2xl border-2 border-dashed border-rose-200 p-6">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="text-rose-600 text-xl"><i class="fa-regular fa-trash-can"></i></span>
+                <div>
+                    <h2 class="text-md font-bold text-slate-900">資源回收桶</h2>
+                    <p class="text-xs text-rose-600 font-medium">資料僅保留 10 天，過期將自動永久刪除</p>
                 </div>
             </div>
-            <div class="form-group">
-                <label>集合地點</label>
-                <input type="text" id="eventLocation" placeholder="例如：某某餐廳或詳細地址">
+            <div id="trashList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 回收桶卡片 -->
             </div>
-            <button onclick="createGroup()">發布並開立群組</button>
         </div>
 
-        <h2>📋 目前已開立的小群組列表</h2>
-        
-        <div class="tabs-container">
-            <button class="tab-btn active" onclick="switchFilterTab('全部')">全部</button>
-            <button class="tab-btn" onclick="switchFilterTab('北部')">北部</button>
-            <button class="tab-btn" onclick="switchFilterTab('中部')">中部</button>
-            <button class="tab-btn" onclick="switchFilterTab('南部')">南部</button>
-            <button class="tab-btn" onclick="switchFilterTab('東部')">東部</button>
-            <button class="tab-btn" onclick="switchFilterTab('離島')">離島</button>
-        </div>
+    </div>
 
-        <div id="cityTagsFilter" class="city-tags-container"></div>
-        <div id="groupList"></div>
-
-        <div class="admin-trigger-bar">
-            <button style="background: #8e8e93; font-size: 13px; padding: 8px; width: auto;" onclick="promptAdminUnlock()">🔑 管理者後台登入</button>
-        </div>
-
-        <div class="admin-box" id="adminBoxContainer">
-            <h3>🔑 朋友帳號密碼查詢專區</h3>
-            <p style="font-size:12px; color:#8e8e93; margin-bottom:5px;">以下為成員註冊或登入時自動同步的紀錄：</p>
-            <table class="user-table">
-                <thead>
-                    <tr>
-                        <th>電子信箱 (Email)</th>
-                        <th>密碼 (Password)</th>
-                    </tr>
-                </thead>
-                <tbody id="adminUserTableBody">
-                    </tbody>
-            </table>
-            <button class="btn-secondary" onclick="lockAdminUserList()" style="margin-top:10px;">關閉並重新隱藏後台</button>
+    <!-- ================= 頁面二：詳細工作摘要頁面 ================= -->
+    <div id="pageRoom" class="page hidden min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden">
+            <div class="bg-slate-900 p-6 text-white relative">
+                <button onclick="goBackToHall()" class="absolute top-6 left-6 text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-arrow-left text-lg"></i>
+                </button>
+                <div class="text-center pt-2">
+                    <span id="roomTypeBadge" class="px-2.5 py-1 rounded-md text-xs font-black tracking-wide uppercase bg-blue-600 text-white inline-block mb-2">施工類別</span>
+                    <h2 id="roomTitle" class="text-xl font-black">載入中...</h2>
+                    <div id="roomStatusBadge" class="mt-3"></div>
+                </div>
+            </div>
+            <div class="p-6 sm:p-8 space-y-6">
+                <div id="roomDetails" class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
+                    <!-- 詳細資料欄位 -->
+                </div>
+                
+                <div class="border-t border-slate-100 pt-6 flex flex-col sm:flex-row gap-3">
+                    <button id="btnToggleJobStatus" onclick="handleToggleJobStatusServer()" class="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10">
+                        <i class="fa-solid fa-rotate"></i>切換工單完成狀態
+                    </button>
+                    <button onclick="goBackToHall()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition flex items-center justify-center gap-2">
+                        ⬅️ 返回大廳列表
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div id="pageRoom" class="page">
-        <div class="card">
-            <div class="room-header">
-                <div class="room-title" id="roomTitle">活動群組</div>
-                <div class="group-meta" id="roomMeta">時間 / 地點</div>
-            </div>
-            
-            <h3>👥 目前群組參加人數：<span id="roomCount" style="color:#ff9500; font-size:22px;">0</span> 人</h3>
-            <div class="attendee-list" id="roomAttendees"></div>
-
-            <div style="margin-top:20px;">
-                <button class="btn-join" id="btnJoinOrLeave" onclick="handleToggleJoin()">我要報名參加</button>
-            </div>
-            <button class="btn-secondary" onclick="goBackToHall()">⬅️ 離開群組，回到大廳</button>
-        </div>
-    </div>
-
+    <!-- ================= Firebase 與排程系統核心邏輯 ================= -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDfEnsCez2ywbt0NQ4jPBUUr8oAIcIwyA0",
@@ -246,394 +403,734 @@
             measurementId: "G-9JHT96DE94",
             databaseURL: "https://account-management-dashb-b4373-default-rtdb.firebaseio.com/"
         };
+
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getDatabase(app);
-        const googleProvider = new GoogleAuthProvider();
-        const ADMIN_MASTER_PASSWORD = "admin888delete";
+
+        const ALLOWED_USERS = {
+            "20081002": { password: "20081002", name: "孫" },
+            "20250401": { password: "20250401", name: "WU" },
+            "20250806": { password: "20250806", name: "林" },
+            "20240802": { password: "20240802", name: "王" }
+        };
 
         const regionData = {
-            "北部": ["基隆市", "台北市", "新北市", "桃園市", "新竹市", "新竹縣", "宜蘭縣"],
-            "中部": ["苗栗縣", "台中市", "彰化縣", "投投縣", "雲林縣"],
-            "南部": ["嘉義市", "嘉義縣", "台南市", "高雄市", "屏東縣"],
-            "東部": ["花蓮縣", "台東縣"],
-            "離島": ["澎湖縣", "金門縣", "連江縣"]
+            "北部": {
+                "基隆市": ["仁愛區", "信義區", "中正區", "中山區", "安樂區", "暖暖區", "七堵區"],
+                "台北市": ["中正區", "大同區", "中山區", "松山區", "大安區", "萬華區", "信義區", "士林區", "北投區", "內湖區", "南港區", "文山區"],
+                "新北市": ["板橋區", "三重區", "中和區", "永和區", "新莊區", "新店區", "樹林區", "鶯歌區", "三峽區", "淡水區", "汐止區", "土城區", "蘆洲區", "五股區", "泰山區", "林口區", "深坑區", "石碇區", "坪林區", "三芝區", "石門區", "八里區", "平溪區", "雙溪區", "貢寮區", "金山區", "萬里區", "烏來區", "瑞芳區"],
+                "桃園市": ["桃園區", "中壢區", "平鎮區", "八德區", "楊梅區", "蘆竹區", "大溪區", "龍潭區", "龜山區", "大園區", "觀音區", "新屋區", "復興區"],
+                "新竹市": ["東區", "北區", "香山區"],
+                "新竹縣": ["竹北市", "竹東鎮", "新埔鎮", "關西鎮", "湖口鄉", "新豐鄉", "芎林鄉", "橫山鄉", "北埔鄉", "寶山鄉", "峨眉鄉", "尖石鄉", "五峰鄉"],
+                "宜蘭縣": ["宜蘭市", "羅東鎮", "蘇澳鎮", "頭城鎮", "礁溪鄉", "壯圍鄉", "员山鄉", "冬山鄉", "五結鄉", "三星鄉", "大同鄉", "南澳鄉"]
+            },
+            "中部": {
+                "苗栗縣": ["苗栗市", "頭份市", "竹南鎮", "後龍鎮", "通霄鎮", "苑裡鎮", "卓蘭鎮", "造橋鄉", "西湖鄉", "頭屋鄉", "公館鄉", "銅鑼鄉", "三義鄉", "大湖鄉", "獅潭鄉", "三灣鄉", "南庄鄉", "泰安鄉"],
+                "台中市": ["中區", "東區", "南區", "西區", "北區", "北屯區", "西屯區", "南屯區", "太平區", "大里區", "霧峰區", "烏日區", "豐原區", "后里區", "清水區", "沙鹿區", "大甲區", "東勢區", "梧棲區", "神岡區", "大雅區", "潭子區", "外埔區", "大安區", "大肚區", "龍井區", "新社區", "石岡區", "和平區"],
+                "彰化縣": ["彰化市", "員林市", "鹿港鎮", "和美鎮", "溪湖鎮", "田中鎮", "二林鎮", "線西鄉", "伸港鄉", "福興鄉", "秀水鄉", "花壇鄉", "芬園鄉", "大村鄉", "埔鹽鄉", "埔心鄉", "永靖鄉", "社頭鄉", "二水鄉", "田尾鄉", "埤頭鄉", "芳苑鄉", "大城鄉", "竹塘鄉", "溪州鄉"],
+                "南投縣": ["南投市", "埔里鎮", "草屯鎮", "竹山鎮", "集集鎮", "名間鄉", "鹿谷鄉", "中寮鄉", "魚池鄉", "國姓鄉", "水里鄉", "信義鄉", "仁愛鄉"],
+                "雲林縣": ["斗六市", "斗南鎮", "虎尾鎮", "西螺鎮", "土庫鎮", "北港鎮", "古坑鄉", "大埤鄉", "莿桐鄉", "林內鄉", "二崙鄉", "崙背鄉", "麥寮鄉", "東勢鄉", "褒忠鄉", "臺西鄉", "元長鄉", "四湖鄉", "口湖鄉", "水林鄉"]
+            },
+            "南部": {
+                "嘉義市": ["東區", "西區"],
+                "嘉義縣": ["太保市", "朴子市", "布袋鎮", "大林鎮", "民雄鄉", "溪口鄉", "新港鄉", "六腳鄉", "東石鄉", "義竹鄉", "鹿草鄉", "水上鄉", "中埔鄉", "竹崎鄉", "梅山鄉", "番路鄉", "大埔鄉", "阿里山鄉"],
+                "台南市": ["新營區", "鹽水區", "白河區", "柳營區", "後壁區", "東山區", "麻豆區", "下營區", "六甲區", "官田區", "大內區", "佳里區", "學甲區", "西港區", "七股區", "將軍區", "北門區", "新化區", "善化區", "新市區", "安定區", "山上區", "玉井區", "左鎮區", "楠西區", "南化區", "仁德區", "歸仁區", "關廟區", "龍崎區", "永康區", "東區", "南區", "北區", "安南區", "安平區", "中西區"],
+                "高雄市": ["鹽埕區", "鼓山區", "左營區", "楠梓區", "三民區", "新興區", "前金區", "苓雅區", "前鎮區", "旗津區", "小港區", "鳳山區", "林園區", "大寮區", "大樹區", "大社區", "仁武區", "鳥松區", "岡山區", "橋頭區", "燕巢區", "田寮區", "阿蓮區", "路竹區", "湖內區", "茄萣區", "永安區", "彌陀區", "梓官區", "旗山區", "美濃區", "六龜區", "甲仙區", "杉林區", "內門區", "茂林區", "桃源區", "那瑪夏區"],
+                "屏東縣": ["屏東市", "潮州鎮", "東港鎮", "恆春鎮", "萬丹鄉", "長治鄉", "麟洛鄉", "九如鄉", "里港鄉", "鹽埔鄉", "高樹鄉", "萬巒鄉", "內埔鄉", "竹田鄉", "新埤鄉", "枋寮鄉", "新園鄉", "崁頂鄉", "林邊鄉", "南州鄉", "佳冬鄉", "琉球鄉", "車城鄉", "滿州鄉", "枋山鄉", "三地門鄉", "霧臺鄉", "瑪家鄉", "泰武鄉", "來義鄉", "春日鄉", "獅子鄉", "牡丹鄉"]
+            },
+            "東部": {
+                "花蓮縣": ["花蓮市", "鳳林鎮", "玉里鎮", "新城鄉", "吉安鄉", "壽豐鄉", "光復鄉", "豐濱鄉", "瑞穗鄉", "富里鄉", "秀林鄉", "萬榮鄉", "卓溪鄉"],
+                "台東縣": ["台東市", "成功鎮", "關山鎮", "卑南鄉", "大武鄉", "太麻里鄉", "東河鄉", "長濱鄉", "鹿野鄉", "池上鄉", "綠島鄉", "延平鄉", "海端鄉", "達仁鄉", "金峰鄉", "蘭嶼鄉"]
+            },
+            "離島": {
+                "澎湖縣": ["馬公市", "湖西鄉", "白沙鄉", "西嶼鄉", "望安鄉", "七美鄉"],
+                "金門縣": ["金城鎮", "金湖鎮", "金沙鎮", "金寧鄉", "烈嶼鄉", "烏坵鄉"],
+                "連江縣": ["南竿鄉", "北竿鄉", "莒光鄉", "東引鄉"]
+            }
         };
-        let isLoginMode = true; 
+
         let currentUser = null;
         let globalEvents = {};
-        let allUsersData = {};
+        let globalTrash = {};
         let currentRoomId = null;
         let currentFilterRegion = "全部";
-        let currentFilterCity = "全部";
         let dbUnsubscribe = null;
-        let securityCheckInterval = null;
+        let dbTrashUnsubscribe = null;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedEmail = localStorage.getItem('saved_email');
-            const savedPass = localStorage.getItem('saved_password');
-            if (savedEmail && savedPass) {
-                document.getElementById('authEmail').value = savedEmail;
-                document.getElementById('authPassword').value = savedPass;
-                document.getElementById('rememberMeCheckbox').checked = true;
-            }
-        });
-
-        function getSafeEmailKey(email) {
-            return email.replace(/\./g, '_');
+        // 取得本日日期字串
+        function getTodayString() {
+            const tzoffset = (new Date()).getTimezoneOffset() * 60000; 
+            return (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
         }
 
-        function syncCredentialsToDb(email, password) {
-            const safeKey = getSafeEmailKey(email);
-            set(ref(db, 'users/' + safeKey), {
-                email: email,
-                password: password,
-                updatedAt: new Date().toLocaleString()
-            }).catch(() => {});
-        }
-
-        function triggerForceLogout() {
-            if(securityCheckInterval) { clearInterval(securityCheckInterval); securityCheckInterval = null; }
-            alert("🔒 偵測到您的帳號權限已變更或已被系統停用，正在將您安全登出...");
-            logout();
-        }
-
-        function startSecurity巡邏(user) {
-            if(securityCheckInterval) clearInterval(securityCheckInterval);
-            securityCheckInterval = setInterval(async () => {
-                if (!auth.currentUser) return;
-                try {
-                    await auth.currentUser.getIdTokenResult(true);
-                } catch (error) {
-                    triggerForceLogout();
-                }
-            }, 5000);
-        }
-
-        window.handleAuth = async function() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
-            const rememberMe = document.getElementById('rememberMeCheckbox').checked;
-
-            if(!email || !password) { alert('請完整填寫信箱與密碼！'); return; }
-
-            if (rememberMe) {
-                localStorage.setItem('saved_email', email);
-                localStorage.setItem('saved_password', password);
+        window.showToast = function(message, type = "success") {
+            const toast = document.createElement("div");
+            toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-sm font-bold transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+            
+            if (type === "success") {
+                toast.className += " bg-emerald-50 border-emerald-200 text-emerald-800";
+                toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> ${message}`;
+            } else if (type === "error") {
+                toast.className += " bg-rose-50 border-rose-200 text-rose-800";
+                toast.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i> ${message}`;
             } else {
-                localStorage.removeItem('saved_email');
-                localStorage.removeItem('saved_password');
+                toast.className += " bg-blue-50 border-blue-200 text-blue-800";
+                toast.innerHTML = `<i class="fa-solid fa-circle-info text-blue-600"></i> ${message}`;
             }
+            
+            const container = document.getElementById("toastContainer");
+            container.appendChild(toast);
+            
+            // 進場動畫
+            setTimeout(() => {
+                toast.classList.remove("translate-y-2", "opacity-0");
+            }, 50);
+            
+            // 自動退場
+            setTimeout(() => {
+                toast.classList.add("translate-y-2", "opacity-0");
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        };
 
-            try {
-                if(isLoginMode) {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } else {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    alert('註冊成功，已自動登入！');
+        window.showConfirm = function(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById("customConfirmModal");
+                const msgEl = document.getElementById("confirmMessage");
+                const cancelBtn = document.getElementById("confirmCancelBtn");
+                const okBtn = document.getElementById("confirmOkBtn");
+                
+                msgEl.innerText = message;
+                modal.classList.remove("hidden");
+                
+                function cleanUp(result) {
+                    modal.classList.add("hidden");
+                    okBtn.onclick = null;
+                    cancelBtn.onclick = null;
+                    resolve(result);
                 }
-                syncCredentialsToDb(email, password);
-            } catch(error) {
-                alert('驗證失敗: ' + error.message);
+                
+                okBtn.onclick = () => cleanUp(true);
+                cancelBtn.onclick = () => cleanUp(false);
+            });
+        };
+
+        window.handleInternalLogin = function() {
+            const account = document.getElementById('authAccount').value.trim();
+            const password = document.getElementById('authPassword').value;
+
+            if (ALLOWED_USERS[account] && ALLOWED_USERS[account].password === password) {
+                currentUser = { uid: account, name: ALLOWED_USERS[account].name };
+                sessionStorage.setItem("internal_user_uid", account);
+                sessionStorage.setItem("internal_user_name", ALLOWED_USERS[account].name);
+                loginSuccessAction();
+                showToast(`登入成功！歡迎 ${currentUser.name} 夥伴。`, "success");
+            } else {
+                showToast("❌ 帳號或密碼錯誤，此系統僅供內部專用！", "error");
             }
         };
 
-        window.handleGoogleLogin = async function() {
-            try {
-                await signInWithPopup(auth, googleProvider);
-            } catch (error) {
-                alert('Google 登入失敗: ' + error.message);
-            }
-        };
+        function loginSuccessAction() {
+            document.getElementById('currentUserName').innerText = currentUser.name;
+            document.getElementById('displayCreator').value = currentUser.name; 
+            switchPage('hall');
+            listenToDatabase();
+        }
 
-        window.toggleAuthMode = function() {
-            isLoginMode = !isLoginMode;
-            document.getElementById('authTitle').innerText = isLoginMode ? '帳號登入' : '帳號註冊';
-            document.getElementById('btnPrimaryAuth').innerText = isLoginMode ? '安全登入' : '立即註冊';
-            document.getElementById('btnToggleAuth').innerText = isLoginMode ?
-            '沒有帳號？點此切換至註冊' : '已有帳號？切換回登入';
-        };
+        if(sessionStorage.getItem("internal_user_uid")) {
+            currentUser = {
+                uid: sessionStorage.getItem("internal_user_uid"),
+                name: sessionStorage.getItem("internal_user_name")
+            };
+            loginSuccessAction();
+        }
 
         window.logout = function() { 
+            sessionStorage.clear();
+            currentUser = null;
             if(dbUnsubscribe) { dbUnsubscribe(); dbUnsubscribe = null; }
-            if(securityCheckInterval) { clearInterval(securityCheckInterval); securityCheckInterval = null; }
-            signOut(auth); 
+            if(dbTrashUnsubscribe) { dbTrashUnsubscribe(); dbTrashUnsubscribe = null; }
+            switchPage('auth');
+            showToast("您已安全登出系統。", "info");
         };
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('currentUserName').innerText = user.displayName || user.email.split('@')[0];
-                switchPage('hall');
-                listenToDatabase();
-                startSecurity巡邏(user);
-            } else {
-                currentUser = null;
-                if(securityCheckInterval) { clearInterval(securityCheckInterval); securityCheckInterval = null; }
-                switchPage('auth');
-            }
-        });
-
-        function listenToDatabase() {
-            if (dbUnsubscribe) dbUnsubscribe();
+        window.toggleJobTypeFields = function() {
+            const selectedType = document.querySelector('input[name="jobType"]:checked').value;
             
-            const eventsRef = ref(db, 'events');
-            onValue(eventsRef, (snapshot) => {
-                globalEvents = snapshot.val() || {};
-                renderGroupList();
-                if(currentRoomId) enterRoom(currentRoomId);
-            }, (error) => {
-                if (error && (error.message.includes("permission_denied") || error.code === "PERMISSION_DENIED")) {
-                    triggerForceLogout();
-                }
-            });
+            // 標籤樣式動畫切換
+            document.getElementById('lblTypeMeasure').className = `flex flex-col items-center justify-center p-2 rounded-xl border cursor-pointer font-semibold text-xs select-none transition ${selectedType === "丈量" ? 'bg-blue-50 border-blue-400 text-blue-700 font-bold' : 'bg-slate-50 border-slate-200 text-slate-600'}`;
+            document.getElementById('lblTypeInstall').className = `flex flex-col items-center justify-center p-2 rounded-xl border cursor-pointer font-semibold text-xs select-none transition ${selectedType === "安裝" ? 'bg-indigo-50 border-indigo-400 text-indigo-700 font-bold' : 'bg-slate-50 border-slate-200 text-slate-600'}`;
+            document.getElementById('lblTypeRework').className = `flex flex-col items-center justify-center p-2 rounded-xl border cursor-pointer font-semibold text-xs select-none transition ${selectedType === "二工" ? 'bg-rose-50 border-rose-400 text-rose-700 font-bold' : 'bg-slate-50 border-slate-200 text-slate-600'}`;
 
-            const usersRef = ref(db, 'users');
-            onValue(usersRef, (snapshot) => {
-                allUsersData = snapshot.val() || {};
-            });
-        }
+            const productSection = document.getElementById('installProductSection');
+            const reworkSection = document.getElementById('reworkSection');
 
-        // 點擊後跳出密碼輸入框
-        window.promptAdminUnlock = function() {
-            const inputVal = prompt("請輸入管理者密碼：");
-            if(inputVal === null) return;
-            if(inputVal === ADMIN_MASTER_PASSWORD) {
-                document.getElementById('adminBoxContainer').style.display = 'block';
-                renderAdminUserTable();
-            } else {
-                alert('管理者密碼錯誤！');
+            if (selectedType === "安裝") {
+                productSection.classList.remove('hidden');
+                reworkSection.classList.add('hidden');
+                const container = document.getElementById('productInputsContainer');
+                if(container.children.length === 0) { addProductInputField(); }
+            } else if (selectedType === "二工") {
+                productSection.classList.add('hidden');
+                reworkSection.classList.remove('hidden');
+            } else { 
+                productSection.classList.add('hidden');
+                reworkSection.classList.add('hidden');
             }
         };
 
-        window.lockAdminUserList = function() {
-            document.getElementById('adminBoxContainer').style.display = 'none';
+        window.toggleStatusRadioClass = function() {
+            const status = document.querySelector('input[name="jobStatus"]:checked').value;
+            const undoneLbl = document.getElementById('lblStatusUndone');
+            const doneLbl = document.getElementById('lblStatusDone');
+            
+            if(status === "未完成") { 
+                undoneLbl.className = 'flex items-center justify-center gap-1.5 py-2.5 rounded-xl border cursor-pointer font-bold text-xs select-none transition bg-amber-50 border-amber-400 text-amber-700'; 
+                doneLbl.className = 'flex items-center justify-center gap-1.5 py-2.5 rounded-xl border cursor-pointer font-bold text-xs select-none transition bg-slate-50 border-slate-200 text-slate-600'; 
+            } else { 
+                undoneLbl.className = 'flex items-center justify-center gap-1.5 py-2.5 rounded-xl border cursor-pointer font-bold text-xs select-none transition bg-slate-50 border-slate-200 text-slate-600'; 
+                doneLbl.className = 'flex items-center justify-center gap-1.5 py-2.5 rounded-xl border cursor-pointer font-bold text-xs select-none transition bg-emerald-50 border-emerald-400 text-emerald-700'; 
+            }
         };
 
-        function renderAdminUserTable() {
-            const tbody = document.getElementById('adminUserTableBody');
-            tbody.innerHTML = '';
-            const keys = Object.keys(allUsersData);
-            if (keys.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999;">目前沒有任何成員登入同步資料。</td></tr>';
-                return;
-            }
-            keys.forEach(k => {
-                const u = allUsersData[k];
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${u.email}</td><td><strong style="color:#d9534f;">${u.password}</strong></td>`;
-                tbody.appendChild(tr);
-            });
-        }
+        window.addProductInputField = function() {
+            const container = document.getElementById('productInputsContainer');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 items-center';
+            div.innerHTML = `
+                <input type="text" class="product-type-input flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-xs" placeholder="例如：平開門、雙開拉門">
+                <button type="button" class="w-8 h-8 flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl transition" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(div);
+        };
 
         window.updateFormCities = function() {
             const region = document.getElementById('eventRegion').value;
             const citySelect = document.getElementById('eventCity');
             citySelect.innerHTML = '';
-            regionData[region].forEach(city => {
+            if(!regionData[region]) return;
+            Object.keys(regionData[region]).forEach(city => {
                 const opt = document.createElement('option');
                 opt.value = city; opt.innerText = city;
                 citySelect.appendChild(opt);
             });
+            updateFormDistricts();
+        };
+
+        window.updateFormDistricts = function() {
+            const region = document.getElementById('eventRegion').value;
+            const city = document.getElementById('eventCity').value;
+            const distSelect = document.getElementById('eventDistrict');
+            distSelect.innerHTML = '';
+            if(!city || !regionData[region][city]) return;
+            regionData[region][city].forEach(dist => {
+                const opt = document.createElement('option');
+                opt.value = dist; opt.innerText = dist;
+                distSelect.appendChild(opt);
+            });
+        };
+
+        function listenToDatabase() {
+            if (dbUnsubscribe) dbUnsubscribe();
+            dbUnsubscribe = onValue(ref(db, 'jobs'), (snapshot) => {
+                globalEvents = snapshot.val() || {};
+                renderGroupList();
+                renderHistoryList(); 
+                if(currentRoomId) enterRoom(currentRoomId);
+            });
+
+            if (dbTrashUnsubscribe) dbTrashUnsubscribe();
+            dbTrashUnsubscribe = onValue(ref(db, 'trash'), (snapshot) => {
+                globalTrash = snapshot.val() || {};
+                checkAndCleanExpiredTrash();
+                renderTrashList();
+            });
+        }
+
+        window.createJobSchedule = function() {
+            const jobType = document.querySelector('input[name="jobType"]:checked').value;
+            const customerName = document.getElementById('customerName').value.trim();
+            const customerPhone = document.getElementById('customerPhone').value.trim(); 
+            const region = document.getElementById('eventRegion').value;
+            const city = document.getElementById('eventCity').value;
+            const district = document.getElementById('eventDistrict').value;
+            const detailedAddress = document.getElementById('detailedAddress').value.trim();
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const workerName = document.getElementById('workerName').value.trim();
+            const jobStatus = document.querySelector('input[name="jobStatus"]:checked').value;
+
+            if (!customerName || !customerPhone || !date || !time || !workerName || !detailedAddress) { 
+                showToast('❌ 請完整填寫所有必要欄位（包含客戶電話、詳細地址）！', 'error'); 
+                return; 
+            }
+
+            let productTypesList = [];
+            if(jobType === "安裝") {
+                const inputs = document.querySelectorAll('.product-type-input');
+                inputs.forEach(input => { if(input.value.trim() !== "") productTypesList.push(input.value.trim()); });
+                if(productTypesList.length === 0) { 
+                    showToast('❌ 請至少填寫一個產品型式！', 'error'); 
+                    return; 
+                }
+            }
+
+            let reworkReason = "";
+            let errorWorker = "";
+            if (jobType === "二工") {
+                reworkReason = document.getElementById('reworkReason').value.trim();
+                errorWorker = document.getElementById('errorWorker').value.trim();
+                if(!reworkReason) { 
+                    showToast('❌ 請務必填寫二工原因說明！', 'error'); 
+                    return; 
+                }
+            }
+
+            const newJobRef = push(ref(db, 'jobs'));
+            set(newJobRef, {
+                id: newJobRef.key,
+                creatorUid: currentUser.uid,
+                creatorName: currentUser.name, 
+                jobType: jobType,
+                customerName: customerName,
+                customerPhone: customerPhone, 
+                region: region, city: city, district: district, detailedAddress: detailedAddress,
+                date: date, time: time,
+                workerName: workerName,
+                productTypes: productTypesList,
+                reworkReason: reworkReason,
+                errorWorker: errorWorker,
+                jobStatus: jobStatus
+            }).then(() => {
+                showToast('工作行程已成功指派並建檔！', 'success');
+            });
+
+            // 清空表單
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = ''; 
+            document.getElementById('detailedAddress').value = '';
+            document.getElementById('eventDate').value = '';
+            document.getElementById('eventTime').value = '';
+            document.getElementById('workerName').value = '';
+            document.getElementById('reworkReason').value = '';
+            document.getElementById('errorWorker').value = '';
+            document.getElementById('productInputsContainer').innerHTML = '';
+            if(jobType === "安裝") addProductInputField();
         };
 
         window.switchFilterTab = function(regionName) {
             currentFilterRegion = regionName;
-            currentFilterCity = "全部";
             document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if(btn.innerText === regionName) btn.classList.add('active');
+                btn.className = `px-3.5 py-1.5 text-xs font-bold rounded-lg transition whitespace-nowrap`;
+                if(btn.innerText.includes(regionName) || (regionName === "全部" && btn.innerText.includes("全部地區"))) {
+                    btn.className += ' bg-blue-600 text-white shadow-md shadow-blue-500/10';
+                } else {
+                    btn.className += ' bg-slate-100 text-slate-600 hover:bg-slate-200';
+                }
             });
-            renderCityTags();
             renderGroupList();
         };
 
-        function renderCityTags() {
-            const container = document.getElementById('cityTagsFilter');
-            container.innerHTML = '';
-            if (currentFilterRegion === "全部") return;
-
-            const allTag = document.createElement('span');
-            allTag.className = currentFilterCity === "全部" ? "city-tag active" : "city-tag";
-            allTag.innerText = "全部縣市";
-            allTag.onclick = () => {
-                currentFilterCity = "全部";
-                document.querySelectorAll('.city-tag').forEach(t => t.classList.remove('active'));
-                allTag.classList.add('active');
-                renderGroupList();
-            };
-            container.appendChild(allTag);
-
-            regionData[currentFilterRegion].forEach(city => {
-                const tag = document.createElement('span');
-                tag.className = currentFilterCity === city ? "city-tag active" : "city-tag";
-                tag.innerText = city;
-                tag.onclick = () => {
-                    currentFilterCity = city;
-                    document.querySelectorAll('.city-tag').forEach(t => t.classList.remove('active'));
-                    tag.classList.add('active');
-                    renderGroupList();
-                };
-                container.appendChild(tag);
-            });
-        }
-
-        window.createGroup = function() {
-            const title = document.getElementById('eventTitle').value.trim();
-            const region = document.getElementById('eventRegion').value;
-            const city = document.getElementById('eventCity').value;
-            const date = document.getElementById('eventDate').value;
-            const time = document.getElementById('eventTime').value;
-            const location = document.getElementById('eventLocation').value.trim();
-            if (!title || !date || !time || !location) { alert('請填寫完整群組資料！'); return; }
-
-            const newEventRef = push(ref(db, 'events'));
-            const nameToShow = currentUser.displayName || currentUser.email.split('@')[0];
-            
-            set(newEventRef, {
-                id: newEventRef.key,
-                creatorUid: currentUser.uid,
-                creatorEmail: nameToShow,
-                title: title, region: region, city: city, date: date, time: time, location: location
-            }).catch((error) => {
-                if (error && (error.message.includes("permission_denied") || error.code === "PERMISSION_DENIED")) {
-                    triggerForceLogout();
-                }
-            });
-            document.getElementById('eventTitle').value = '';
-            document.getElementById('eventDate').value = '';
-            document.getElementById('eventTime').value = '';
-            document.getElementById('eventLocation').value = '';
+        window.clearDateFilter = function() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            renderGroupList();
         };
-
-        function isEventExpired(dateStr, timeStr) {
-            if (!dateStr || !timeStr) return false;
-            return new Date() > new Date(`${dateStr}T${timeStr}`);
-        }
 
         function renderGroupList() {
             const listDiv = document.getElementById('groupList');
             listDiv.innerHTML = '';
             
-            const eventKeys = Object.keys(globalEvents);
-            if (eventKeys.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">目前大廳空空如也。</p>';
+            const keys = Object.keys(globalEvents);
+            if (keys.length === 0) {
+                listDiv.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-100 text-slate-400">
+                        <i class="fa-solid fa-clipboard-question text-3xl mb-2"></i>
+                        <p class="text-sm">目前尚無排定的工作行程。</p>
+                    </div>`;
+                document.getElementById('activeCount').innerText = '0 筆項目';
                 return;
             }
 
-            let hasContent = false;
-            eventKeys.reverse().forEach(key => {
-                const group = globalEvents[key];
-                if (currentFilterRegion !== "全部" && group.region !== currentFilterRegion) return;
-                if (currentFilterCity !== "全部" && group.city !== currentFilterCity) return;
+            const selType = document.getElementById('filterType').value;
+            const selStatus = document.getElementById('filterStatus').value;
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            const todayStr = getTodayString();
 
-                hasContent = true;
-                const count = group.attendees ? Object.keys(group.attendees).length : 0;
+            let activeCount = 0;
+
+            keys.reverse().forEach(key => {
+                const job = globalEvents[key];
+
+                // 核心邏輯：右側大廳只顯示未過期的行程 (日期大於或等於今天)
+                if (job.date < todayStr) return;
+
+                if (selType !== "全部" && job.jobType !== selType) return;
+                if (selStatus !== "全部" && job.jobStatus !== selStatus) return;
+                if (currentFilterRegion !== "全部" && job.region !== currentFilterRegion) return;
+                if (startDate && job.date < startDate) return;
+                if (endDate && job.date > endDate) return;
+
+                activeCount++;
                 const card = document.createElement('div');
-                const expired = isEventExpired(group.date, group.time);
-                card.className = expired ? 'group-card expired' : 'group-card';
-                
-                card.onclick = (e) => {
-                    if (e.target.tagName === 'BUTTON') return;
-                    if (expired) { alert('該活動已過期關閉。'); return; }
-                    switchPage('room', group.id);
-                };
+                card.className = 'group-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative hover:shadow-md transition duration-200 cursor-pointer overflow-hidden';
+                card.onclick = (e) => { if (e.target.closest('button') || e.target.closest('a')) return; switchPage('room', job.id); };
 
-                const deleteBtn = `<button class="btn-delete-group" onclick="deleteGroup(event, '${group.id}', '${group.creatorUid}')">✕</button>`;
+                // 依大類設定左邊裝飾條
+                let borderClass = 'border-l-4 border-l-blue-500';
+                let typeBadgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+                if(job.jobType === "安裝") {
+                    borderClass = 'border-l-4 border-l-indigo-500';
+                    typeBadgeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                } else if(job.jobType === "二工") {
+                    borderClass = 'border-l-4 border-l-rose-500';
+                    typeBadgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+                }
+                card.className += ` ${borderClass}`;
+
+                const statusBadgeHtml = job.jobStatus === "已完成" 
+                    ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1"><i class="fa-solid fa-circle-check"></i>已完成</span>` 
+                    : `<span class="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1"><i class="fa-solid fa-clock animate-pulse"></i>未完成</span>`;
+
+                let extraHtml = '';
+                if(job.jobType === "安裝" && job.productTypes) {
+                    extraHtml = '<div class="flex flex-wrap gap-1.5 mt-3">';
+                    job.productTypes.forEach(p => { 
+                        extraHtml += `<span class="bg-slate-100 text-slate-600 text-[11px] font-bold px-2.5 py-0.5 rounded-md flex items-center gap-1"><i class="fa-solid fa-box text-slate-400"></i>${p}</span>`; 
+                    });
+                    extraHtml += '</div>';
+                } else if(job.jobType === "二工" && job.reworkReason) {
+                    extraHtml = `
+                        <div class="mt-3 bg-rose-50/50 border border-rose-100 rounded-xl p-3 text-xs">
+                            <p class="text-rose-700 font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>二工補件追蹤</p>
+                            <p class="text-slate-600"><span class="font-semibold text-slate-700">原因：</span>${job.reworkReason}</p>
+                            <p class="text-slate-600 mt-1"><span class="font-semibold text-slate-700">責任歸屬：</span>${job.errorWorker || '未註明'}</p>
+                        </div>
+                    `;
+                }
+
                 card.innerHTML = `
-                    ${deleteBtn}
-                    <div class="group-title">
-                        <span><span class="city-badge">${group.city}</span>${group.title}</span>
-                        <span class="group-count">成員 ${count} 人</span>
+                    <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition" onclick="deleteJobScheduleServer(event, '${job.id}')">
+                        <i class="fa-regular fa-trash-can text-sm"></i>
+                    </button>
+                    <div class="flex justify-between items-start pr-8">
+                        <div>
+                            <span class="px-2 py-0.5 border text-[10px] font-bold rounded ${typeBadgeColor} uppercase tracking-wider inline-block mb-1.5">${job.jobType}</span>
+                            <h3 class="text-base font-black text-slate-900">${job.customerName}</h3>
+                        </div>
+                        ${statusBadgeHtml}
                     </div>
-                    <div class="group-meta">📅 時間：${group.date} ${group.time} | 👤 主辦：${group.creatorEmail}</div>
-                    <div class="group-meta">📍 地點：${group.location}</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 text-xs text-slate-500">
+                        <div class="flex items-center gap-2"><i class="fa-solid fa-phone text-slate-400 w-4"></i>客戶電話：<a href="tel:${job.customerPhone}" class="text-blue-600 font-bold hover:underline">${job.customerPhone || '未提供'}</a></div>
+                        <div class="flex items-center gap-2"><i class="fa-regular fa-calendar text-slate-400 w-4"></i>派工時間：<span class="font-bold text-slate-700">${job.date} ${job.time}</span></div>
+                        <div class="flex items-center gap-2 col-span-1 sm:col-span-2"><i class="fa-solid fa-location-dot text-slate-400 w-4"></i>施作地址：<span class="bg-indigo-50/60 text-indigo-700 px-1.5 py-0.5 rounded text-[11px] font-black">${job.city || ''}${job.district || ''}</span> <span class="font-medium text-slate-700">${job.detailedAddress || ''}</span></div>
+                        <div class="flex items-center gap-2"><i class="fa-solid fa-user-check text-slate-400 w-4"></i>施作工班：<span class="font-bold text-slate-700">${job.workerName}</span></div>
+                        <div class="flex items-center gap-2"><i class="fa-regular fa-user text-slate-400 w-4"></i>發布人員：<span class="font-medium text-slate-600">${job.creatorName || '系統'}</span></div>
+                    </div>
+                    ${extraHtml}
                 `;
                 listDiv.appendChild(card);
             });
 
-            if(!hasContent) listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">此分類目前沒有群組。</p>';
+            document.getElementById('activeCount').innerText = `${activeCount} 筆項目`;
+            if(activeCount === 0) {
+                listDiv.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-100 text-slate-400">
+                        <i class="fa-solid fa-clipboard-question text-3xl mb-2"></i>
+                        <p class="text-sm">沒有符合當前篩選條件的工作行程。</p>
+                    </div>`;
+            }
         }
 
-        window.deleteGroup = function(event, roomId, creatorUid) {
-            event.stopPropagation();
-            if (!currentUser) { alert('請先登入帳號！'); return; }
-            if (currentUser.uid === creatorUid) {
-                if (confirm('您確定要永久刪除這個由您開立的群組嗎？')) {
-                    remove(ref(db, 'events/' + roomId)).catch((err) => { triggerForceLogout(); });
-                    alert('已成功刪除您的群組！');
+        function renderHistoryList() {
+            const historyDiv = document.getElementById('historyList');
+            historyDiv.innerHTML = '';
+
+            const keys = Object.keys(globalEvents);
+            const todayStr = getTodayString();
+            const searchText = document.getElementById('historySearchInput').value.trim().toLowerCase();
+            
+            let historyCount = 0;
+
+            keys.reverse().forEach(key => {
+                const job = globalEvents[key];
+
+                // 🔴 核心邏輯：左側歷史紀錄只抓取已過期的行程 (日期小於今天)[cite: 1]
+                if (job.date >= todayStr) return;
+
+                // 🔍 關鍵字即時搜尋匹配[cite: 1]
+                if (searchText) {
+                    const matchName = (job.customerName || "").toLowerCase().includes(searchText);
+                    const matchPhone = (job.customerPhone || "").toLowerCase().includes(searchText);
+                    const matchWorker = (job.workerName || "").toLowerCase().includes(searchText);
+                    const matchAddress = (job.detailedAddress || "").toLowerCase().includes(searchText);
+                    const matchType = (job.jobType || "").toLowerCase().includes(searchText);
+                    if (!matchName && !matchPhone && !matchWorker && !matchAddress && !matchType) return;
                 }
-                return;
+
+                historyCount++;
+                
+                // 卡片式歷史卡片
+                const historyCard = document.createElement('div');
+                historyCard.className = 'group-card bg-slate-50 hover:bg-white rounded-xl p-3.5 border border-slate-200 hover:border-indigo-400 hover:shadow-sm transition-all duration-150 cursor-pointer relative';
+                historyCard.onclick = (e) => { if (e.target.closest('button')) return; switchPage('room', job.id); };
+
+                // 狀態小標籤
+                const statusColor = job.jobStatus === "已完成" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-amber-50 text-amber-700 border border-amber-100";
+                
+                // 工種標籤
+                let typeBadgeColor = 'bg-blue-50 text-blue-600 border-blue-100';
+                if(job.jobType === "安裝") typeBadgeColor = 'bg-indigo-50 text-indigo-600 border-indigo-100';
+                if(job.jobType === "二工") typeBadgeColor = 'bg-rose-50 text-rose-600 border-rose-100';
+
+                historyCard.innerHTML = `
+                    <button class="absolute top-3 right-3 w-6 h-6 flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 rounded transition" onclick="deleteJobScheduleServer(event, '${job.id}')">
+                        <i class="fa-regular fa-trash-can text-xs"></i>
+                    </button>
+                    <div class="flex justify-between items-start mb-2 pr-6">
+                        <div class="flex items-center gap-1.5">
+                            <span class="px-1.5 py-0.5 border text-[9px] font-black rounded ${typeBadgeColor}">${job.jobType}</span>
+                            <h4 class="font-black text-sm text-slate-800">${job.customerName}</h4>
+                        </div>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold ${statusColor}">${job.jobStatus}</span>
+                    </div>
+                    <div class="space-y-1 text-[11px] text-slate-500">
+                        <div class="flex items-center gap-1"><i class="fa-regular fa-calendar text-slate-400 w-3.5"></i>施工日期：<span class="font-bold text-slate-700">${job.date}</span></div>
+                        <div class="flex items-center gap-1"><i class="fa-solid fa-user-check text-slate-400 w-3.5"></i>施作人員：<span class="font-medium text-slate-600">${job.workerName}</span></div>
+                        <div class="flex items-center gap-1"><i class="fa-solid fa-location-dot text-slate-400 w-3.5"></i>地址：<span class="font-medium text-slate-600 truncate max-w-[200px]">${job.city}${job.district}${job.detailedAddress}</span></div>
+                    </div>
+                `;
+                historyDiv.appendChild(historyCard);
+            });
+
+            document.getElementById('historyCount').innerText = `${historyCount} 筆項目`;
+            if (historyCount === 0) {
+                historyDiv.innerHTML = `
+                    <div class="bg-slate-50 text-center p-6 border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs">
+                        <i class="fa-solid fa-magnifying-glass text-lg mb-1"></i>
+                        <p>無匹配的歷史工作紀錄。</p>
+                    </div>`;
             }
-            const adminInput = prompt('非本人創立之群組。若您是系統管理員，請輸入「管理者刪除密碼」：');
-            if (adminInput === null) return;
-            if (adminInput === ADMIN_MASTER_PASSWORD) {
-                if (confirm('【最高權限認證成功】確定要強制刪除此用戶開立的小群組嗎？')) {
-                    remove(ref(db, 'events/' + roomId)).catch((err) => { triggerForceLogout(); });
-                    alert('管理員已強制刪除該群組！');
-                }
-            } else {
-                alert('密碼錯誤！您沒有權限刪除其他人的小群組。');
+        }
+
+        window.deleteJobScheduleServer = async function(event, jobId) {
+            event.stopPropagation();
+            const confirmDel = await showConfirm('確認是否要把此工作排程移到資源回收桶？');
+            if (confirmDel) {
+                const jobData = globalEvents[jobId];
+                if (!jobData) return;
+
+                jobData.deletedBy = currentUser.name;
+                jobData.deletedAt = Date.now();
+
+                set(ref(db, 'trash/' + jobId), jobData).then(() => {
+                    remove(ref(db, 'jobs/' + jobId)).then(() => {
+                        showToast('已將行程移入回收桶。', 'info');
+                    });
+                });
             }
         };
 
-        function enterRoom(roomId) {
-            const group = globalEvents[roomId];
-            if (!group) { goBackToHall(); return; }
-
-            document.getElementById('roomTitle').innerText = `💬 [${group.city}] ${group.title}`;
-            document.getElementById('roomMeta').innerHTML = `📅 時間：${group.date} ${group.time}<br>📍 地點：${group.location}`;
+        function renderTrashList() {
+            const trashDiv = document.getElementById('trashList');
+            trashDiv.innerHTML = '';
             
-            const attendees = group.attendees || {};
-            const attendeeKeys = Object.keys(attendees);
-            document.getElementById('roomCount').innerText = attendeeKeys.length;
-            const attendeesDiv = document.getElementById('roomAttendees');
-            attendeesDiv.innerHTML = '';
-            
-            let isAmIIn = false;
-            attendeeKeys.forEach(key => {
-                if(attendees[key].uid === currentUser.uid) isAmIIn = true;
-                const wrapper = document.createElement('div');
-                wrapper.className = 'tag-wrapper';
-                wrapper.innerHTML = `<span class="tag-name" style="padding-right:10px;">👤 ${attendees[key].name}</span>`;
-                attendeesDiv.appendChild(wrapper);
-            });
-
-            if(attendeeKeys.length === 0) attendeesDiv.innerHTML = '<p style="color:#999; text-align:center; margin:0;">目前群組尚無成員。</p>';
-            const btn = document.getElementById('btnJoinOrLeave');
-            if(isAmIIn) {
-                btn.innerText = "❌ 我要退出此群組";
-                btn.style.background = "#ff3b30";
-            } else {
-                btn.innerText = "➕ 我要報名參加";
-                btn.style.background = "#34c759";
+            const keys = Object.keys(globalTrash);
+            if (keys.length === 0) {
+                trashDiv.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 bg-white/60 text-center py-6 rounded-xl border border-rose-100 text-slate-400 text-xs">
+                        <i class="fa-regular fa-folder-open text-xl mb-1 text-slate-300"></i>
+                        <p>回收桶目前空空如也。</p>
+                    </div>`;
+                return;
             }
+
+            keys.reverse().forEach(key => {
+                const item = globalTrash[key];
+                
+                const msPassed = Date.now() - item.deletedAt;
+                const daysLeft = Math.max(0, Math.ceil((10 * 24 * 60 * 60 * 1000 - msPassed) / (1000 * 60 * 60 * 24)));
+
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl p-4 border border-rose-100 shadow-sm relative flex flex-col justify-between';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-sm font-black text-slate-500"><del>【${item.jobType}】${item.customerName}</del></span>
+                            <span class="bg-rose-50 border border-rose-100 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full">⏳ 剩餘 ${daysLeft} 天永久清除</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 space-y-1 mb-4">
+                            <p><i class="fa-solid fa-phone text-slate-300 mr-1"></i>電話：${item.customerPhone || '未提供'}</p>
+                            <p><i class="fa-regular fa-calendar text-slate-300 mr-1"></i>原預定施工：${item.date} ${item.time}</p>
+                            <p><i class="fa-solid fa-user-large text-slate-300 mr-1"></i>原始發布：<b>${item.creatorName || '未知'}</b></p>
+                            <p class="text-rose-600 font-bold"><i class="fa-solid fa-user-xmark mr-1"></i>執行刪除人員：【${item.deletedBy || '未知'}】</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 border-t border-slate-100 pt-3">
+                        <button class="flex-1 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200 transition" onclick="restoreFromTrash('${item.id}')">
+                            <i class="fa-solid fa-rotate-left mr-1"></i>還原行程
+                        </button>
+                        <button class="flex-1 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition" onclick="permanentlyDeleteTrash('${item.id}')">
+                            <i class="fa-regular fa-circle-xmark mr-1"></i>永久刪除
+                        </button>
+                    </div>
+                `;
+                trashDiv.appendChild(card);
+            });
         }
 
-        window.handleToggleJoin = function() {
-            const group = globalEvents[currentRoomId];
-            if(!group) return;
-            const attendees = group.attendees || {};
-            const myJoinKey = Object.keys(attendees).find(k => attendees[k].uid === currentUser.uid);
-            if(myJoinKey) {
-                if(confirm('確定要退出此活動群組嗎？')) {
-                    remove(ref(db, `events/${currentRoomId}/attendees/${myJoinKey}`)).catch((err) => { triggerForceLogout(); });
-                }
-            } else {
-                const name = currentUser.displayName || currentUser.email.split('@')[0];
-                const newAttendeeRef = push(ref(db, `events/${currentRoomId}/attendees`));
-                set(newAttendeeRef, { uid: currentUser.uid, name: name }).catch((err) => { triggerForceLogout(); });
+        window.restoreFromTrash = function(jobId) {
+            const data = globalTrash[jobId];
+            if (!data) return;
+
+            delete data.deletedBy;
+            delete data.deletedAt;
+
+            set(ref(db, 'jobs/' + jobId), data).then(() => {
+                remove(ref(db, 'trash/' + jobId)).then(() => {
+                    showToast('行程已成功還原回大廳列表！', 'success');
+                });
+            });
+        };
+
+        window.permanentlyDeleteTrash = async function(jobId) {
+            const confirmKill = await showConfirm('警告：此操作將永久銷毀資料，無法復原！是否確認永久刪除？');
+            if (confirmKill) {
+                remove(ref(db, 'trash/' + jobId)).then(() => {
+                    showToast('資料已完成永久銷毀。', 'info');
+                });
             }
+        };
+
+        function checkAndCleanExpiredTrash() {
+            const keys = Object.keys(globalTrash);
+            const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+
+            keys.forEach(key => {
+                const item = globalTrash[key];
+                if (item.deletedAt && (now - item.deletedAt > tenDaysMs)) {
+                    remove(ref(db, 'trash/' + key)); 
+                }
+            });
+        }
+
+        function enterRoom(jobId) {
+            const job = globalEvents[jobId];
+            if (!job) { goBackToHall(); return; }
+
+            document.getElementById('roomTitle').innerText = job.customerName;
+            
+            // 頂部大工種標籤
+            const typeBadge = document.getElementById('roomTypeBadge');
+            typeBadge.innerText = `${job.jobType}工程`;
+            if(job.jobType === "安裝") typeBadge.className = "px-2.5 py-1 rounded-md text-xs font-black tracking-wide uppercase bg-indigo-600 text-white inline-block mb-2";
+            else if(job.jobType === "二工") typeBadge.className = "px-2.5 py-1 rounded-md text-xs font-black tracking-wide uppercase bg-rose-600 text-white inline-block mb-2";
+            else typeBadge.className = "px-2.5 py-1 rounded-md text-xs font-black tracking-wide uppercase bg-blue-600 text-white inline-block mb-2";
+
+            const statusBadge = document.getElementById('roomStatusBadge');
+            statusBadge.innerHTML = job.jobStatus === "已完成" 
+                ? '<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-black inline-flex items-center gap-1">✅ 施工狀態：已完成</span>' 
+                : '<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full text-xs font-black inline-flex items-center gap-1">⏳ 施工狀態：未完成</span>';
+
+            let extraDetails = '';
+            if(job.jobType === "安裝" && job.productTypes) {
+                extraDetails = `
+                    <div class="col-span-1 sm:col-span-2 mt-2 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                        <p class="font-black text-slate-800 mb-2"><i class="fa-solid fa-box mr-1"></i>指定安裝產品型式：</p>
+                        <div class="flex flex-wrap gap-1.5">` + 
+                        job.productTypes.map(p => `<span class="bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-lg font-bold">${p}</span>`).join('') + 
+                        `</div>
+                    </div>`;
+            } else if (job.jobType === "二工") {
+                extraDetails = `
+                    <div class="col-span-1 sm:col-span-2 mt-2 bg-rose-50/50 border border-rose-100 rounded-2xl p-4">
+                        <p class="text-rose-700 font-bold mb-2 flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i>二次施工異常追蹤：</p>
+                        <p class="text-xs text-slate-600 mb-1"><span class="font-bold text-slate-800">● 二工補件原因：</span>${job.reworkReason}</p>
+                        <p class="text-xs text-slate-600"><span class="font-bold text-slate-800">● 異常出錯責任：</span>${job.errorWorker || '未註明'}</p>
+                    </div>
+                `;
+            }
+
+            const phoneLinkHtml = job.customerPhone ? `<a href="tel:${job.customerPhone}" class="text-blue-600 font-bold hover:underline">${job.customerPhone}</a>` : '未提供';
+
+            document.getElementById('roomDetails').innerHTML = `
+                <div class="p-3 bg-slate-50 rounded-xl flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-phone"></i></span>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold">客戶聯絡電話</p>
+                        <p class="text-sm font-semibold text-slate-800">${phoneLinkHtml}</p>
+                    </div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><i class="fa-regular fa-calendar"></i></span>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold">預定施工日期</p>
+                        <p class="text-sm font-semibold text-slate-800">${job.date}</p>
+                    </div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center"><i class="fa-regular fa-clock"></i></span>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold">預定施工時間</p>
+                        <p class="text-sm font-semibold text-slate-800">${job.time}</p>
+                    </div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-user-check"></i></span>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold">指定現場施作人員</p>
+                        <p class="text-sm font-semibold text-slate-800">${job.workerName}</p>
+                    </div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl col-span-1 sm:col-span-2 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-map-location-dot"></i></span>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold">工作派遣地點</p>
+                        <p class="text-sm font-semibold text-slate-800">[${job.region || ''}] ${job.city || ''} ${job.district || ''} ${job.detailedAddress || ''}</p>
+                    </div>
+                </div>
+                ${extraDetails}
+                <div class="col-span-1 sm:col-span-2 text-center text-xs text-slate-400 pt-2">
+                    由內部團隊人員【${job.creatorName || '系統'}】指派建檔與發布
+                </div>
+            `;
+        }
+
+        window.handleToggleJobStatusServer = function() {
+            const job = globalEvents[currentRoomId];
+            if(!job) return;
+            const nextStatus = job.jobStatus === "已完成" ? "未完成" : "已完成";
+            update(ref(db, `jobs/${currentRoomId}`), { jobStatus: nextStatus }).then(() => {
+                showToast(`行程狀態已切換為：${nextStatus}`, 'success');
+            });
         };
 
         window.goBackToHall = function() { switchPage('hall'); };
 
         function switchPage(pageName, roomId = null) {
             currentRoomId = roomId;
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            if(pageName === 'auth') document.getElementById('pageAuth').classList.add('active');
-            if(pageName === 'hall') { document.getElementById('pageHall').classList.add('active'); renderGroupList(); }
-            if(pageName === 'room') { document.getElementById('pageRoom').classList.add('active'); enterRoom(roomId); }
+            
+            const pAuth = document.getElementById('pageAuth');
+            const pHall = document.getElementById('pageHall');
+            const pRoom = document.getElementById('pageRoom');
+
+            pAuth.classList.add('hidden');
+            pHall.classList.add('hidden');
+            pRoom.classList.add('hidden');
+
+            if(pageName === 'auth') pAuth.classList.remove('hidden');
+            if(pageName === 'hall') { 
+                pHall.classList.remove('hidden'); 
+                renderGroupList(); 
+                renderHistoryList(); 
+            }
+            if(pageName === 'room') { 
+                pRoom.classList.remove('hidden'); 
+                enterRoom(roomId); 
+            }
         }
 
         updateFormCities();
