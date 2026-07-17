@@ -33,7 +33,7 @@
             <button onclick="registerCode()">確認送出</button>
         </div>
         <div id="msg-container"></div>
-        <button class="admin-btn" onclick="toggleAdmin()">切換至管理者後台</button>
+        <button class="admin-btn" onclick="requestAdminAccess()">切換至管理者後台</button>
     </div>
 
     <!-- 管理者後台區 -->
@@ -77,9 +77,23 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 把方法掛載到全域，讓 HTML 的 onclick 可以呼叫
+    // 🔐 設定你的管理者密碼（可自行修改）
+    const ADMIN_PASSWORD = "my_secret_password_123";
+
+    // 處理帳號遮罩的函式 (首尾保留，中間轉成 *)
+    function maskUsername(name) {
+        if (!name) return "";
+        if (name.length <= 1) return name;
+        if (name.length === 2) return name[0] + "*";
+        
+        const firstChar = name[0];
+        const lastChar = name[name.length - 1];
+        const stars = "*".repeat(name.length - 2);
+        return firstChar + stars + lastChar;
+    }
+
+    // 參與者登記功能
     window.registerCode = async function() {
-        // 檢查此瀏覽器是否已經填寫過
         if (localStorage.getItem('lottery_submitted') === 'true') {
             alert("⚠️ 偵測到此裝置已經填寫過了，每個裝置只有一次機會！");
             return;
@@ -97,7 +111,6 @@
         const codeRef = doc(db, "codes", inputCode);
 
         try {
-            // 使用 Transaction 確保原子性，防止兩人同時搶同一個代號
             await runTransaction(db, async (transaction) => {
                 const codeDoc = await transaction.get(codeRef);
                 
@@ -110,14 +123,12 @@
                     throw new Error("ALREADY_TAKEN");
                 }
 
-                // 標記為已被佔用
                 transaction.update(codeRef, {
                     user: username,
                     status: "taken"
                 });
             });
 
-            // 成功後寫入本地紀錄防重複
             localStorage.setItem('lottery_submitted', 'true');
             document.getElementById('form-container').classList.add('hidden');
             msgContainer.innerHTML = `<p class="success">🎉 登記成功！<br>您已成功綁定代號：${inputCode}</p>`;
@@ -133,18 +144,30 @@
         }
     };
 
-    window.toggleAdmin = async function() {
+    // 驗證密碼並進入後台
+    window.requestAdminAccess = function() {
+        const inputPass = prompt("請輸入管理者密碼：");
+        if (inputPass === null) return; // 按取消
+
+        if (inputPass === ADMIN_PASSWORD) {
+            toggleAdmin();
+        } else {
+            alert("❌ 密碼錯誤，拒絕存取！");
+        }
+    };
+
+    function toggleAdmin() {
         const userView = document.getElementById('user-view');
         const adminView = document.getElementById('admin-view');
         
         userView.classList.toggle('hidden');
         adminView.classList.toggle('hidden');
 
-        // 如果切換到管理者畫面，順便載入目前名單
         if (!adminView.classList.contains('hidden')) {
             loadAdminTable();
         }
-    };
+    }
+    window.toggleAdmin = toggleAdmin; 
 
     async function loadAdminTable() {
         const tbody = document.getElementById('admin-table-body');
@@ -188,16 +211,18 @@
                 return;
             }
 
-            // 隨機抽獎
             const winner = validEntries[Math.floor(Math.random() * validEntries.length)];
+            
+            // 套用遮罩處理中獎帳號
+            const maskedUser = maskUsername(winner.user);
+
             winnerDisplay.classList.remove('hidden');
-            winnerDisplay.innerHTML = `🏆 恭喜中獎！<br>帳號：${winner.user} (代號: ${winner.id} / 號碼: ${winner.number})`;
+            winnerDisplay.innerHTML = `🏆 恭喜中獎！<br>帳號：${maskedUser} (代號: ${winner.id} / 號碼: ${winner.number})`;
         } catch (e) {
             alert("抽獎過程發生錯誤：" + e.message);
         }
     };
 
-    // 頁面載入時檢查是否填過，如果填過直接顯示已完成
     if (localStorage.getItem('lottery_submitted') === 'true') {
         document.getElementById('form-container').classList.add('hidden');
         document.getElementById('msg-container').innerHTML = `<p class="success">您已經完成登記囉！請等待抽獎結果。</p>`;
