@@ -59,28 +59,30 @@
     </div>
 </div>
 
-<!-- 引入 Firebase SDK (使用 v10 模組化版本) -->
+<!-- 引入 Firebase SDK (Realtime Database 版本) -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // ⚠️ 請替換成你自己的 Firebase 專案設定
+    // 使用你的 Realtime Database 設定
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_AUTH_DOMAIN",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_STORAGE_BUCKET",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyDfEnsCez2ywbt0NQ4jPBUUr8oAIcIwyA0",
+        authDomain: "account-management-dashb-b4373.firebaseapp.com",
+        databaseURL: "https://account-management-dashb-b4373-default-rtdb.firebaseio.com",
+        projectId: "account-management-dashb-b4373",
+        storageBucket: "account-management-dashb-b4373.firebasestorage.app",
+        messagingSenderId: "294482078870",
+        appId: "1:294482078870:web:f75ff744e13f8f5c5f26b7",
+        measurementId: "G-9JHT96DE94"
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const db = getDatabase(app);
 
-    // 🔐 設定你的管理者密碼（可自行修改）
+    // 🔐 設定你的管理者密碼
     const ADMIN_PASSWORD = "my_secret_password_123";
 
-    // 處理帳號遮罩的函式 (首尾保留，中間轉成 *)
+    // 處理帳號遮罩的函式
     function maskUsername(name) {
         if (!name) return "";
         if (name.length <= 1) return name;
@@ -92,7 +94,7 @@
         return firstChar + stars + lastChar;
     }
 
-    // 參與者登記功能
+    // 參與者登記功能 (Realtime Database 寫法)
     window.registerCode = async function() {
         if (localStorage.getItem('lottery_submitted') === 'true') {
             alert("⚠️ 偵測到此裝置已經填寫過了，每個裝置只有一次機會！");
@@ -108,25 +110,26 @@
             return;
         }
 
-        const codeRef = doc(db, "codes", inputCode);
+        const codeRef = ref(db, 'codes/' + inputCode);
 
         try {
-            await runTransaction(db, async (transaction) => {
-                const codeDoc = await transaction.get(codeRef);
-                
-                if (!codeDoc.exists()) {
-                    throw new Error("NOT_FOUND");
-                }
-                
-                const data = codeDoc.data();
-                if (data.status === "taken") {
-                    throw new Error("ALREADY_TAKEN");
-                }
+            const snapshot = await get(codeRef);
+            
+            if (!snapshot.exists()) {
+                alert("⚠️ 警告：查無此代號，請重新輸入！");
+                return;
+            }
+            
+            const data = snapshot.val();
+            if (data.status === "taken") {
+                alert("⚠️ 警告：此代號已經被人填寫過了，請重新輸入其他代號！");
+                return;
+            }
 
-                transaction.update(codeRef, {
-                    user: username,
-                    status: "taken"
-                });
+            // 更新資料庫
+            await update(codeRef, {
+                user: username,
+                status: "taken"
             });
 
             localStorage.setItem('lottery_submitted', 'true');
@@ -134,20 +137,14 @@
             msgContainer.innerHTML = `<p class="success">🎉 登記成功！<br>您已成功綁定代號：${inputCode}</p>`;
 
         } catch (error) {
-            if (error.message === "NOT_FOUND") {
-                alert("⚠️ 警告：查無此代號，請重新輸入！");
-            } else if (error.message === "ALREADY_TAKEN") {
-                alert("⚠️ 警告：此代號已經被人填寫過了，請重新輸入其他代號！");
-            } else {
-                alert("發生未預期的錯誤：" + error.message);
-            }
+            alert("發生未預期的錯誤：" + error.message);
         }
     };
 
     // 驗證密碼並進入後台
     window.requestAdminAccess = function() {
         const inputPass = prompt("請輸入管理者密碼：");
-        if (inputPass === null) return; // 按取消
+        if (inputPass === null) return;
 
         if (inputPass === ADMIN_PASSWORD) {
             toggleAdmin();
@@ -174,14 +171,20 @@
         tbody.innerHTML = '<tr><td colspan="3">載入中...</td></tr>';
 
         try {
-            const querySnapshot = await getDocs(collection(db, "codes"));
+            const snapshot = await get(ref(db, 'codes'));
             tbody.innerHTML = '';
             
-            querySnapshot.forEach((docSnap) => {
-                const data = docSnap.data();
+            if (!snapshot.exists()) {
+                tbody.innerHTML = '<tr><td colspan="3">尚無資料</td></tr>';
+                return;
+            }
+
+            snapshot.forEach((childSnapshot) => {
+                const codeId = childSnapshot.key;
+                const data = childSnapshot.val();
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${docSnap.id}</td>
+                    <td>${codeId}</td>
                     <td>${data.number || '-'}</td>
                     <td>${data.user ? data.user : '<span style="color:#ccc;">尚未登記</span>'}</td>
                 `;
@@ -194,15 +197,17 @@
 
     window.drawWinner = async function() {
         try {
-            const querySnapshot = await getDocs(collection(db, "codes"));
+            const snapshot = await get(ref(db, 'codes'));
             let validEntries = [];
             
-            querySnapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                if (data.status === "taken") {
-                    validEntries.push({ id: docSnap.id, ...data });
-                }
-            });
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    if (data.status === "taken") {
+                        validEntries.push({ id: childSnapshot.key, ...data });
+                    }
+                });
+            }
 
             const winnerDisplay = document.getElementById('winner-display');
             if (validEntries.length === 0) {
@@ -212,8 +217,6 @@
             }
 
             const winner = validEntries[Math.floor(Math.random() * validEntries.length)];
-            
-            // 套用遮罩處理中獎帳號
             const maskedUser = maskUsername(winner.user);
 
             winnerDisplay.classList.remove('hidden');
