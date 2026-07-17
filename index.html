@@ -6,17 +6,19 @@
     <title>線上抽獎系統</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 480px; text-align: center; }
         input { width: calc(100% - 20px); padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
         button { background: #007bff; color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0056b3; }
         .admin-btn { background: #6c757d; margin-top: 20px; }
         .admin-btn:hover { background: #5a6268; }
+        .delete-btn { background: #dc3545; padding: 6px 10px; font-size: 13px; width: auto; margin: 0; }
+        .delete-btn:hover { background: #c82333; }
         .success { color: #28a745; font-weight: bold; }
         .winner-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 6px; margin-top: 20px; color: #856404; font-weight: bold; }
         .hidden { display: none; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-        th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
+        th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; vertical-align: middle; }
         th { background: #e9ecef; }
     </style>
 </head>
@@ -48,6 +50,7 @@
                 <tr>
                     <th>代號</th>
                     <th>登記帳號</th>
+                    <th>操作</th>
                 </tr>
             </thead>
             <tbody id="admin-table-body">
@@ -61,7 +64,7 @@
 <!-- 引入 Firebase SDK (Realtime Database 版本) -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDfEnsCez2ywbt0NQ4jPBUUr8oAIcIwyA0",
@@ -90,11 +93,10 @@
         return firstChar + stars + lastChar;
     }
 
-    // 登記功能 (已取消重複限制與強制密碼檢查)
+    // 登記功能
     window.registerCode = async function() {
         const username = document.getElementById('username').value.trim();
         const inputCode = document.getElementById('code').value.trim().toUpperCase();
-        const msgContainer = document.getElementById('msg-container');
 
         if (!username || !inputCode) {
             alert("請完整填寫帳號與代號！");
@@ -104,7 +106,6 @@
         const codeRef = ref(db, 'codes/' + inputCode);
 
         try {
-            // 直接寫入資料庫（若代號已存在則會直接覆蓋更新，支援修改）
             await set(codeRef, {
                 user: username,
                 status: "taken",
@@ -146,14 +147,14 @@
 
     async function loadAdminTable() {
         const tbody = document.getElementById('admin-table-body');
-        tbody.innerHTML = '<tr><td colspan="2">載入中...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3">載入中...</td></tr>';
 
         try {
             const snapshot = await get(ref(db, 'codes'));
             tbody.innerHTML = '';
             
             if (!snapshot.exists()) {
-                tbody.innerHTML = '<tr><td colspan="2">目前尚無人登記</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3">目前尚無人登記</td></tr>';
                 return;
             }
 
@@ -164,13 +165,29 @@
                 tr.innerHTML = `
                     <td>${codeId}</td>
                     <td>${data.user || '-'}</td>
+                    <td><button class="delete-btn" onclick="deleteEntry('${codeId}')">刪除</button></td>
                 `;
                 tbody.appendChild(tr);
             });
         } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="2">載入失敗：${e.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="3">載入失敗：${e.message}</td></tr>`;
         }
     }
+
+    // 刪除指定的代號資料
+    window.deleteEntry = async function(codeId) {
+        if (!confirm(`確定要刪除代號 [${codeId}] 嗎？`)) {
+            return;
+        }
+
+        try {
+            await remove(ref(db, 'codes/' + codeId));
+            alert(`已成功刪除代號 [${codeId}]`);
+            loadAdminTable(); // 重新整理表格
+        } catch (e) {
+            alert("刪除失敗：" + e.message);
+        }
+    };
 
     window.drawWinner = async function() {
         try {
