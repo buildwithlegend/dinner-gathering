@@ -28,7 +28,7 @@
         <h2>🎉 活動抽獎登記</h2>
         <div id="form-container">
             <p>請輸入您的帳號名稱與自訂代號</p>
-            <input type="text" id="username" placeholder="帳號名稱 (輸入密碼即為管理者)" required>
+            <input type="text" id="username" placeholder="帳號名稱" required>
             <input type="text" id="code" placeholder="代號 (例如: A01)" required style="text-transform: uppercase;">
             <button onclick="registerCode()">確認送出</button>
         </div>
@@ -90,7 +90,7 @@
         return firstChar + stars + lastChar;
     }
 
-    // 登記功能 (支援管理者特權)
+    // 登記功能 (已取消重複限制與強制密碼檢查)
     window.registerCode = async function() {
         const username = document.getElementById('username').value.trim();
         const inputCode = document.getElementById('code').value.trim().toUpperCase();
@@ -101,41 +101,19 @@
             return;
         }
 
-        // 判斷是否為管理者登入
-        const isAdmin = (username === ADMIN_PASSWORD);
-
-        // 如果不是管理者，才檢查裝置重複限制
-        if (!isAdmin && localStorage.getItem('lottery_submitted') === 'true') {
-            alert("⚠️ 偵測到此裝置已經填寫過了，每個裝置只有一次機會！");
-            return;
-        }
-
         const codeRef = ref(db, 'codes/' + inputCode);
 
         try {
-            const snapshot = await get(codeRef);
-            
-            // 如果不是管理者，且代號已被佔用，則阻擋
-            if (!isAdmin && snapshot.exists()) {
-                alert("⚠️ 警告：這個代號已經被人使用過了，請換一個代號！");
-                return;
-            }
-
-            // 寫入資料（若是管理者，會直接覆蓋/強制建立該代號）
+            // 直接寫入資料庫（若代號已存在則會直接覆蓋更新，支援修改）
             await set(codeRef, {
-                user: isAdmin ? "管理者強制寫入" : username,
+                user: username,
                 status: "taken",
                 timestamp: Date.now()
             });
 
-            if (!isAdmin) {
-                localStorage.setItem('lottery_submitted', 'true');
-                document.getElementById('form-container').classList.add('hidden');
-                msgContainer.innerHTML = `<p class="success">🎉 登記成功！<br>您已成功綁定代號：${inputCode}</p>`;
-            } else {
-                alert(`👑 管理者權限：成功強制建立/更改代號 [${inputCode}]！`);
-                document.getElementById('code').value = '';
-            }
+            alert(`🎉 成功登記/更新代號：[${inputCode}]！`);
+            document.getElementById('code').value = '';
+            document.getElementById('username').value = '';
 
         } catch (error) {
             alert("發生未預期的錯誤：" + error.message);
@@ -222,11 +200,6 @@
             alert("抽獎過程發生錯誤：" + e.message);
         }
     };
-
-    if (localStorage.getItem('lottery_submitted') === 'true') {
-        document.getElementById('form-container').classList.add('hidden');
-        document.getElementById('msg-container').innerHTML = `<p class="success">您已經完成登記囉！請等待抽獎結果。</p>`;
-    }
 </script>
 
 </body>
