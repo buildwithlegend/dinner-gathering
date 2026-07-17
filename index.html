@@ -27,7 +27,7 @@
     <div id="user-view">
         <h2>🎉 活動抽獎登記</h2>
         <div id="form-container">
-            <p>請輸入您的帳號名稱與對應代號</p>
+            <p>請輸入您的帳號名稱與自訂代號</p>
             <input type="text" id="username" placeholder="帳號名稱" required>
             <input type="text" id="code" placeholder="代號 (例如: A01)" required style="text-transform: uppercase;">
             <button onclick="registerCode()">確認送出</button>
@@ -47,7 +47,6 @@
             <thead>
                 <tr>
                     <th>代號</th>
-                    <th>號碼</th>
                     <th>登記帳號</th>
                 </tr>
             </thead>
@@ -62,9 +61,8 @@
 <!-- 引入 Firebase SDK (Realtime Database 版本) -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // 使用你的 Realtime Database 設定
     const firebaseConfig = {
         apiKey: "AIzaSyDfEnsCez2ywbt0NQ4jPBUUr8oAIcIwyA0",
         authDomain: "account-management-dashb-b4373.firebaseapp.com",
@@ -79,10 +77,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 🔐 設定你的管理者密碼
     const ADMIN_PASSWORD = "my_secret_password_123";
 
-    // 處理帳號遮罩的函式
     function maskUsername(name) {
         if (!name) return "";
         if (name.length <= 1) return name;
@@ -94,7 +90,7 @@
         return firstChar + stars + lastChar;
     }
 
-    // 參與者登記功能 (Realtime Database 寫法)
+    // 自由登記功能
     window.registerCode = async function() {
         if (localStorage.getItem('lottery_submitted') === 'true') {
             alert("⚠️ 偵測到此裝置已經填寫過了，每個裝置只有一次機會！");
@@ -113,23 +109,18 @@
         const codeRef = ref(db, 'codes/' + inputCode);
 
         try {
+            // 檢查這個代號是否已經被人註冊過
             const snapshot = await get(codeRef);
-            
-            if (!snapshot.exists()) {
-                alert("⚠️ 警告：查無此代號，請重新輸入！");
-                return;
-            }
-            
-            const data = snapshot.val();
-            if (data.status === "taken") {
-                alert("⚠️ 警告：此代號已經被人填寫過了，請重新輸入其他代號！");
+            if (snapshot.exists()) {
+                alert("⚠️ 警告：這個代號已經被人使用過了，請換一個代號！");
                 return;
             }
 
-            // 更新資料庫
-            await update(codeRef, {
+            // 直接將新的代號與帳號寫入資料庫
+            await set(codeRef, {
                 user: username,
-                status: "taken"
+                status: "taken",
+                timestamp: Date.now()
             });
 
             localStorage.setItem('lottery_submitted', 'true');
@@ -141,7 +132,6 @@
         }
     };
 
-    // 驗證密碼並進入後台
     window.requestAdminAccess = function() {
         const inputPass = prompt("請輸入管理者密碼：");
         if (inputPass === null) return;
@@ -168,14 +158,14 @@
 
     async function loadAdminTable() {
         const tbody = document.getElementById('admin-table-body');
-        tbody.innerHTML = '<tr><td colspan="3">載入中...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="2">載入中...</td></tr>';
 
         try {
             const snapshot = await get(ref(db, 'codes'));
             tbody.innerHTML = '';
             
             if (!snapshot.exists()) {
-                tbody.innerHTML = '<tr><td colspan="3">尚無資料</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2">目前尚無人登記</td></tr>';
                 return;
             }
 
@@ -185,13 +175,12 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${codeId}</td>
-                    <td>${data.number || '-'}</td>
-                    <td>${data.user ? data.user : '<span style="color:#ccc;">尚未登記</span>'}</td>
+                    <td>${data.user || '-'}</td>
                 `;
                 tbody.appendChild(tr);
             });
         } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="3">載入失敗：${e.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="2">載入失敗：${e.message}</td></tr>`;
         }
     }
 
@@ -203,9 +192,7 @@
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
                     const data = childSnapshot.val();
-                    if (data.status === "taken") {
-                        validEntries.push({ id: childSnapshot.key, ...data });
-                    }
+                    validEntries.push({ id: childSnapshot.key, ...data });
                 });
             }
 
@@ -220,7 +207,7 @@
             const maskedUser = maskUsername(winner.user);
 
             winnerDisplay.classList.remove('hidden');
-            winnerDisplay.innerHTML = `🏆 恭喜中獎！<br>帳號：${maskedUser} (代號: ${winner.id} / 號碼: ${winner.number})`;
+            winnerDisplay.innerHTML = `🏆 恭喜中獎！<br>帳號：${maskedUser} (代號: ${winner.id})`;
         } catch (e) {
             alert("抽獎過程發生錯誤：" + e.message);
         }
