@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>逐日自訂班別與排休系統 (設定區與班表均支援按週隱藏)</title>
+    <title>逐日自訂班別與排休系統 (含當日個人工時顯示)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,7 +11,7 @@
             background-color: #f5f5f5;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1250px;
             margin: 0 auto;
             background: #fff;
             padding: 20px;
@@ -117,6 +117,7 @@
         
         .off { background-color: #ffe6e6; color: #d9534f; font-weight: bold; }
         .sunday { background-color: #f8d7da; color: #721c24; font-weight: bold; }
+        .work-hours-cell { background-color: #f0f7ff; color: #0056b3; text-align: left !important; padding-left: 10px !important; }
         
         .summary-grid {
             display: grid;
@@ -189,7 +190,6 @@ function renderDailyInputTable() {
     let container = document.getElementById('inputWeeksContainer');
     container.innerHTML = '';
 
-    // 按週劃分資料
     let weeks = [];
     let currentWeek = [];
 
@@ -207,7 +207,6 @@ function renderDailyInputTable() {
         }
     }
 
-    // 渲染每週的輸入表單區塊
     weeks.forEach((weekData, wIndex) => {
         let weekNum = wIndex + 1;
         let startDate = weekData[0].day;
@@ -225,13 +224,13 @@ function renderDailyInputTable() {
                 <table class="daily-setting-table">
                     <thead>
                         <tr>
-                            <th style="width: 10%;">日期</th>
-                            <th style="width: 10%;">星期</th>
+                            <th style="width: 8%;">日期</th>
+                            <th style="width: 8%;">星期</th>
                             <th>早班 (08-12 / 4h)</th>
                             <th>中班 (12-17 / 5h)</th>
                             <th>晚班 (17-21 / 4h)</th>
                             <th style="color:#d9534f;">休假人數</th>
-                            <th style="width: 25%;">說明</th>
+                            <th style="width: 20%;">說明</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -311,10 +310,9 @@ function generateMonthlySchedule() {
         if (mCount === 0 && nCount === 0 && eCount === 0) {
             monthlySchedule.push({
                 date: d, dayName: dayNames[dayOfWeek], dayOfWeek: dayOfWeek, isOffDay: true,
-                morning: '-', noon: '-', night: '-', off: employees.join(', ')
+                morning: '-', noon: '-', night: '-', off: employees.join(', '), dailyHoursStr: '-'
             });
         } else {
-            // 平日休假次數嚴格上限 4 天
             let eligibleForOff = employees.filter(emp => stats[emp].weekdayOffs < 4);
 
             eligibleForOff.sort((a, b) => 
@@ -329,6 +327,7 @@ function generateMonthlySchedule() {
 
             let assigned = { morning: [], noon: [], night: [] };
             let todayWorkingSet = new Set();
+            let todayWorkerHours = {}; // 記錄當天個別員工工時
 
             const shiftsToAssign = [
                 { key: 'morning', count: mCount, hours: shiftHours.morning },
@@ -351,12 +350,22 @@ function generateMonthlySchedule() {
                     stats[emp].hours += shift.hours;
                     stats[emp].shiftsCount++;
                     todayWorkingSet.add(emp);
+
+                    // 採計當天個人工時
+                    todayWorkerHours[emp] = (todayWorkerHours[emp] || 0) + shift.hours;
                 });
             });
 
             todayWorkingSet.forEach(emp => stats[emp].daysCount++);
             let offEmps = employees.filter(e => !todayWorkingSet.has(e));
             offEmps.forEach(emp => stats[emp].weekdayOffs++);
+
+            // 格式化當日個人工時字串 (例：哲嘉(8h), 敏琪(4h))
+            let dailyHoursArr = [];
+            for (let emp in todayWorkerHours) {
+                dailyHoursArr.push(`${emp}(${todayWorkerHours[emp]}h)`);
+            }
+            let dailyHoursStr = dailyHoursArr.length > 0 ? dailyHoursArr.join(', ') : '-';
 
             monthlySchedule.push({
                 date: d,
@@ -366,7 +375,8 @@ function generateMonthlySchedule() {
                 morning: assigned.morning.length > 0 ? assigned.morning.join(', ') : '-',
                 noon: assigned.noon.length > 0 ? assigned.noon.join(', ') : '-',
                 night: assigned.night.length > 0 ? assigned.night.join(', ') : '-',
-                off: offEmps.length > 0 ? offEmps.join(', ') : '無休'
+                off: offEmps.length > 0 ? offEmps.join(', ') : '無休',
+                dailyHoursStr: dailyHoursStr
             });
         }
     }
@@ -410,12 +420,13 @@ function renderMonthlyTable(monthVal, schedule, stats, employees) {
             <div class="table-wrapper" id="result_week_${weekNum}">
                 <table class="result-table">
                     <tr>
-                        <th style="width: 10%;">日期</th>
-                        <th style="width: 10%;">星期</th>
-                        <th>早班 (08:00-12:00 / 4h)</th>
-                        <th>中班 (12:00-17:00 / 5h)</th>
-                        <th>晚班 (17:00-21:00 / 4h)</th>
-                        <th>全日排休人員</th>
+                        <th style="width: 6%;">日期</th>
+                        <th style="width: 6%;">星期</th>
+                        <th style="width: 20%;">早班 (08:00-12:00 / 4h)</th>
+                        <th style="width: 20%;">中班 (12:00-17:00 / 5h)</th>
+                        <th style="width: 20%;">晚班 (17:00-21:00 / 4h)</th>
+                        <th style="width: 12%;">全日排休人員</th>
+                        <th style="width: 16%;">當日個人工作時數</th>
                     </tr>`;
 
         weekData.forEach(s => {
@@ -423,7 +434,7 @@ function renderMonthlyTable(monthVal, schedule, stats, employees) {
                 html += `<tr class="sunday">
                     <td>${s.date} 日</td>
                     <td>週${s.dayName}</td>
-                    <td colspan="4">全店公休 / 無排班</td>
+                    <td colspan="5">全店公休 / 無排班</td>
                 </tr>`;
             } else {
                 html += `<tr>
@@ -433,6 +444,7 @@ function renderMonthlyTable(monthVal, schedule, stats, employees) {
                     <td>${s.noon}</td>
                     <td>${s.night}</td>
                     <td class="off">${s.off}</td>
+                    <td class="work-hours-cell">${s.dailyHoursStr}</td>
                 </tr>`;
             }
         });
@@ -462,7 +474,6 @@ function renderMonthlyTable(monthVal, schedule, stats, employees) {
     document.getElementById('result').innerHTML = html;
 }
 
-// 通用區塊切換隱藏 / 展開
 function toggleBlock(blockId, btn) {
     const block = document.getElementById(blockId);
     if (block.style.display === "none") {
@@ -474,7 +485,6 @@ function toggleBlock(blockId, btn) {
     }
 }
 
-// 輸入區一鍵切換
 function toggleInputWeeks(showAll) {
     const blocks = document.querySelectorAll('[id^="input_week_"]');
     blocks.forEach(b => {
@@ -484,7 +494,6 @@ function toggleInputWeeks(showAll) {
     });
 }
 
-// 結果區一鍵切換
 function toggleResultWeeks(showAll) {
     const blocks = document.querySelectorAll('[id^="result_week_"]');
     blocks.forEach(b => {
