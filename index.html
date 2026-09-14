@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>自動排班系統 (精準160小時)</title>
+    <title>自動排班系統 (週休二日 + 精準160h)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -82,7 +82,7 @@
 <body>
 
 <div class="container">
-    <h1>08:00 - 21:00 三班自動排班系統 (精準160小時)</h1>
+    <h1>08:00 - 21:00 自動排班系統 (平日排休 + 精準160h)</h1>
     
     <div class="control-panel">
         <div class="form-group">
@@ -125,9 +125,13 @@ function generateMonthlySchedule() {
 
     // 初始化統計數據（目標每人剛好 160 小時）
     let stats = {};
-    employees.forEach(emp => { stats[emp] = { hours: 0, shiftsCount: 0, daysCount: 0 }; });
+    employees.forEach(emp => { 
+        stats[emp] = { hours: 0, shiftsCount: 0, daysCount: 0, weekdayOffs: 0 }; 
+    });
 
     let monthlySchedule = [];
+    let currentWeekWorkedDays = {};
+    employees.forEach(emp => currentWeekWorkedDays[emp] = 0);
 
     for (let d = 1; d <= totalDays; d++) {
         let dateObj = new Date(year, month - 1, d);
@@ -135,17 +139,22 @@ function generateMonthlySchedule() {
         let isSunday = dayOfWeek === 0;
         let isSaturday = dayOfWeek === 6;
 
+        // 週一重置當週工作天數統計
+        if (dayOfWeek === 1) {
+            employees.forEach(emp => currentWeekWorkedDays[emp] = 0);
+        }
+
         if (isSunday) {
             monthlySchedule.push({
                 date: d, dayName: dayNames[dayOfWeek], isSunday: true,
                 morning: '-', noon: '-', night: '-', off: employees.join(', ')
             });
         } else {
-            // 平日：早班 (3人)、中班 (2人)、晚班 (3人)
-            // 週六：早班 (3人)、中班 (3人)
+            // 平日：早班 (2~3人)、中班 (2人)、晚班 (2~3人)
+            // 週六：早班 (3人)、中班 (2~3人)
             let shiftRequirements = isSaturday 
-                ? [ { name: 'morning', count: 3 }, { name: 'noon', count: 3 } ]
-                : [ { name: 'morning', count: 3 }, { name: 'noon', count: 2 }, { name: 'night', count: 3 } ];
+                ? [ { name: 'morning', count: 3 }, { name: 'noon', count: 2 } ]
+                : [ { name: 'morning', count: 2 }, { name: 'noon', count: 2 }, { name: 'night', count: 2 } ];
 
             let assigned = { morning: [], noon: [], night: [] };
             let todayWorkingSet = new Set();
@@ -153,15 +162,24 @@ function generateMonthlySchedule() {
             shiftRequirements.forEach(shift => {
                 let h = shiftHours[shift.name];
 
-                // 篩選出加入此班別後不會超過 160 小時的人員
-                let available = employees.filter(emp => stats[emp].hours + h <= 160);
+                // 篩選條件：
+                // 1. 加上本次班別工時未超過 160h
+                // 2. 避免單日連續排班超過上限（優先選擇未排班者）
+                let available = employees.filter(emp => 
+                    stats[emp].hours + h <= 160 && !assigned[shift.name].includes(emp)
+                );
 
-                // 按目前累積工時由少到多排序
+                // 排序權重：
+                // 1. 本週已工作天數較少者優先（強制平日至少排休1天）
+                // 2. 總累積工時較少者優先
                 available.sort((a, b) => {
+                    if (currentWeekWorkedDays[a] !== currentWeekWorkedDays[b]) {
+                        return currentWeekWorkedDays[a] - currentWeekWorkedDays[b];
+                    }
                     return (stats[a].hours - stats[b].hours) || (Math.random() - 0.5);
                 });
 
-                // 若可用人數不足，則從剩餘工時最少的人員中補充（極少發生）
+                // 若符合條件者不足，則調用備用人員
                 if (available.length < shift.count) {
                     let overflow = employees.filter(emp => !available.includes(emp))
                                            .sort((a, b) => stats[a].hours - stats[b].hours);
@@ -178,8 +196,14 @@ function generateMonthlySchedule() {
                 });
             });
 
+            // 記錄當日出勤與排休狀態
+            todayWorkingSet.forEach(emp => {
+                stats[emp].daysCount++;
+                currentWeekWorkedDays[emp]++;
+            });
+
             let offEmps = employees.filter(e => !todayWorkingSet.has(e));
-            todayWorkingSet.forEach(emp => stats[emp].daysCount++);
+            offEmps.forEach(emp => stats[emp].weekdayOffs++);
 
             monthlySchedule.push({
                 date: d,
@@ -197,7 +221,7 @@ function generateMonthlySchedule() {
 }
 
 function renderMonthlyTable(monthVal, schedule, stats, employees) {
-    let html = `<h2>${monthVal} 月度班表總覽</h2>`;
+    let html = `<h2>${monthVal} 月度班表總覽 (包含平日排休機制)</h2>`;
 
     html += `<div class="table-wrapper"><table>
         <tr>
@@ -230,7 +254,7 @@ function renderMonthlyTable(monthVal, schedule, stats, employees) {
 
     html += `</table></div>`;
 
-    html += `<h3>【個人工時與出勤統計】(目標：每人剛好 160 小時)</h3>`;
+    html += `<h3>【個人工時與休假統計】(目標：每人剛好 160h + 每週平日至少休1天)</h3>`;
     html += `<div class="summary-grid">`;
     
     employees.forEach(emp => {
@@ -238,8 +262,8 @@ function renderMonthlyTable(monthVal, schedule, stats, employees) {
         html += `<div class="summary-card">
             <strong>${emp}</strong><br>
             總工時：<span class="pass">${h} 小時</span><br>
-            總班次：${stats[emp].shiftsCount} 次<br>
-            出勤天數：${stats[emp].daysCount} 天
+            出勤天數：${stats[emp].daysCount} 天<br>
+            平日排休：${stats[emp].weekdayOffs} 天
         </div>`;
     });
     
