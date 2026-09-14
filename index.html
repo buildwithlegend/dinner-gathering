@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>逐日自訂班別與排休系統 (平日休假嚴格不超過4天)</title>
+    <title>逐日自訂班別與排休系統 (支援按週隱藏功能)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -80,11 +80,37 @@
         }
         .daily-setting-table th { background-color: #e9ecef; }
         .sun-row { background-color: #f8d7da; }
+        
+        /* 班表結果表格與每週收折控制卡片 */
+        .week-card {
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            background: #fff;
+            overflow: hidden;
+        }
+        .week-header {
+            background-color: #343a40;
+            color: #fff;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        .btn-toggle-week {
+            background-color: #17a2b8;
+            color: white;
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+        .btn-toggle-week:hover { background-color: #138496; }
+        
         .table-wrapper { overflow-x: auto; }
         table.result-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
             font-size: 14px;
         }
         table.result-table th, table.result-table td {
@@ -92,9 +118,10 @@
             padding: 8px 6px;
             text-align: center;
         }
-        table.result-table th { background-color: #e9ecef; position: sticky; top: 0; }
+        table.result-table th { background-color: #e9ecef; }
         .off { background-color: #ffe6e6; color: #d9534f; font-weight: bold; }
         .sunday { background-color: #f8d7da; color: #721c24; font-weight: bold; }
+        
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -249,21 +276,19 @@ function generateMonthlySchedule() {
 
         if (mCount === 0 && nCount === 0 && eCount === 0) {
             monthlySchedule.push({
-                date: d, dayName: dayNames[dayOfWeek], isOffDay: true,
+                date: d, dayName: dayNames[dayOfWeek], dayOfWeek: dayOfWeek, isOffDay: true,
                 morning: '-', noon: '-', night: '-', off: employees.join(', ')
             });
         } else {
-            // 嚴格過濾：僅選取平日休假次數「小於 4 次」的人員
+            // 嚴格過濾：僅選取平日休假次數小於 4 次的人員
             let eligibleForOff = employees.filter(emp => stats[emp].weekdayOffs < 4);
 
-            // 排序：休假次數最少者 > 總工時較高者
             eligibleForOff.sort((a, b) => 
                 (stats[a].weekdayOffs - stats[b].weekdayOffs) ||
                 (stats[b].hours - stats[a].hours) ||
                 (Math.random() - 0.5)
             );
 
-            // 實際可排休人數受限於未滿4天的人數
             let actualOffCount = Math.min(oCount, eligibleForOff.length);
             let todayOffSet = new Set(eligibleForOff.slice(0, actualOffCount));
             let availableWorkers = employees.filter(emp => !todayOffSet.has(emp));
@@ -277,14 +302,12 @@ function generateMonthlySchedule() {
                 { key: 'night', count: eCount, hours: shiftHours.night }
             ];
 
-            // 安排上班人員至各班別
             shiftsToAssign.forEach(shift => {
                 let available = availableWorkers.filter(emp => 
                     (stats[emp].hours + shift.hours <= 160) && 
                     !assigned[shift.key].includes(emp)
                 );
 
-                // 工時較少者優先選派
                 available.sort((a, b) => (stats[a].hours - stats[b].hours) || (Math.random() - 0.5));
 
                 let selected = available.slice(0, shift.count);
@@ -297,7 +320,6 @@ function generateMonthlySchedule() {
                 });
             });
 
-            // 統計當日工作與休假狀態
             todayWorkingSet.forEach(emp => stats[emp].daysCount++);
             let offEmps = employees.filter(e => !todayWorkingSet.has(e));
             offEmps.forEach(emp => stats[emp].weekdayOffs++);
@@ -305,6 +327,7 @@ function generateMonthlySchedule() {
             monthlySchedule.push({
                 date: d,
                 dayName: dayNames[dayOfWeek],
+                dayOfWeek: dayOfWeek,
                 isOffDay: false,
                 morning: assigned.morning.length > 0 ? assigned.morning.join(', ') : '-',
                 noon: assigned.noon.length > 0 ? assigned.noon.join(', ') : '-',
@@ -318,38 +341,71 @@ function generateMonthlySchedule() {
 }
 
 function renderMonthlyTable(monthVal, schedule, stats, employees) {
-    let html = `<h2>${monthVal} 月度班表總覽</h2>`;
+    let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+        <h2>${monthVal} 月度班表總覽</h2>
+        <div>
+            <button class="btn-sec" onclick="toggleAllWeeks(true)">全展開當月</button>
+            <button class="btn-sec" onclick="toggleAllWeeks(false)">全隱藏當月</button>
+        </div>
+    </div>`;
 
-    html += `<div class="table-wrapper"><table class="result-table">
-        <tr>
-            <th>日期</th>
-            <th>星期</th>
-            <th>早班 (08:00-12:00 / 4h)</th>
-            <th>中班 (12:00-17:00 / 5h)</th>
-            <th>晚班 (17:00-21:00 / 4h)</th>
-            <th>全日排休人員</th>
-        </tr>`;
+    // 按週分組 (逢週日開起新的一週)
+    let weeks = [];
+    let currentWeek = [];
 
-    schedule.forEach(s => {
-        if (s.isOffDay) {
-            html += `<tr class="sunday">
-                <td>${s.date} 日</td>
-                <td>週${s.dayName}</td>
-                <td colspan="4">全店公休 / 無排班</td>
-            </tr>`;
-        } else {
-            html += `<tr>
-                <td><strong>${s.date} 日</strong></td>
-                <td>週${s.dayName}</td>
-                <td>${s.morning}</td>
-                <td>${s.noon}</td>
-                <td>${s.night}</td>
-                <td class="off">${s.off}</td>
-            </tr>`;
+    schedule.forEach((dayData, index) => {
+        if (dayData.dayOfWeek === 0 && currentWeek.length > 0) {
+            weeks.push(currentWeek);
+            currentWeek = [];
+        }
+        currentWeek.push(dayData);
+        if (index === schedule.length - 1) {
+            weeks.push(currentWeek);
         }
     });
 
-    html += `</table></div>`;
+    weeks.forEach((weekData, wIndex) => {
+        let weekNum = wIndex + 1;
+        let startDate = weekData[0].date;
+        let endDate = weekData[weekData.length - 1].date;
+
+        html += `<div class="week-card">
+            <div class="week-header">
+                <span>第 ${weekNum} 週 (${monthVal.split('-')[1]}/${startDate} 日 ~ ${monthVal.split('-')[1]}/${endDate} 日)</span>
+                <button class="btn-toggle-week" onclick="toggleWeekBlock(${weekNum})" id="btn_week_${weekNum}">隱藏當週</button>
+            </div>
+            <div class="table-wrapper" id="week_block_${weekNum}">
+                <table class="result-table">
+                    <tr>
+                        <th style="width: 10%;">日期</th>
+                        <th style="width: 10%;">星期</th>
+                        <th>早班 (08:00-12:00 / 4h)</th>
+                        <th>中班 (12:00-17:00 / 5h)</th>
+                        <th>晚班 (17:00-21:00 / 4h)</th>
+                        <th>全日排休人員</th>
+                    </tr>`;
+
+        weekData.forEach(s => {
+            if (s.isOffDay) {
+                html += `<tr class="sunday">
+                    <td>${s.date} 日</td>
+                    <td>週${s.dayName}</td>
+                    <td colspan="4">全店公休 / 無排班</td>
+                </tr>`;
+            } else {
+                html += `<tr>
+                    <td><strong>${s.date} 日</strong></td>
+                    <td>週${s.dayName}</td>
+                    <td>${s.morning}</td>
+                    <td>${s.noon}</td>
+                    <td>${s.night}</td>
+                    <td class="off">${s.off}</td>
+                </tr>`;
+            }
+        });
+
+        html += `</table></div></div>`;
+    });
 
     html += `<h3>【個人工時與休假統計】(上限 160 小時 / 平日上限 4 天休假)</h3>`;
     html += `<div class="summary-grid">`;
@@ -371,6 +427,29 @@ function renderMonthlyTable(monthVal, schedule, stats, employees) {
     html += `</div>`;
 
     document.getElementById('result').innerHTML = html;
+}
+
+// 切換單週顯示/隱藏
+function toggleWeekBlock(weekNum) {
+    const block = document.getElementById(`week_block_${weekNum}`);
+    const btn = document.getElementById(`btn_week_${weekNum}`);
+    
+    if (block.style.display === "none") {
+        block.style.display = "block";
+        btn.innerText = "隱藏當週";
+    } else {
+        block.style.display = "none";
+        btn.innerText = "展開當週";
+    }
+}
+
+// 全部展開 / 全部隱藏
+function toggleAllWeeks(showAll) {
+    const blocks = document.querySelectorAll('[id^="week_block_"]');
+    const btns = document.querySelectorAll('[id^="btn_week_"]');
+
+    blocks.forEach(b => b.style.display = showAll ? "block" : "none");
+    btns.forEach(b => b.innerText = showAll ? "隱藏當週" : "展開當週");
 }
 
 window.onload = renderDailyInputTable;
