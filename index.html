@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>逐日自訂班別與排休系統 (平日排休天數控管)</title>
+    <title>逐日自訂班別與排休系統 (平日休假嚴格不超過4天)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -253,22 +253,19 @@ function generateMonthlySchedule() {
                 morning: '-', noon: '-', night: '-', off: employees.join(', ')
             });
         } else {
-            // 1. 篩選當天可排休人選 (優先排除已達到平日休假 4 天上限的人)
+            // 嚴格過濾：僅選取平日休假次數「小於 4 次」的人員
             let eligibleForOff = employees.filter(emp => stats[emp].weekdayOffs < 4);
 
-            // 如果大家都滿 4 天排休了，則開放所有人共同參與備選
-            if (eligibleForOff.length < oCount) {
-                eligibleForOff = [...employees];
-            }
-
-            // 排序：休假次數最少者優先 > 總工時較高者優先
+            // 排序：休假次數最少者 > 總工時較高者
             eligibleForOff.sort((a, b) => 
                 (stats[a].weekdayOffs - stats[b].weekdayOffs) ||
                 (stats[b].hours - stats[a].hours) ||
                 (Math.random() - 0.5)
             );
 
-            let todayOffSet = new Set(eligibleForOff.slice(0, oCount));
+            // 實際可排休人數受限於未滿4天的人數
+            let actualOffCount = Math.min(oCount, eligibleForOff.length);
+            let todayOffSet = new Set(eligibleForOff.slice(0, actualOffCount));
             let availableWorkers = employees.filter(emp => !todayOffSet.has(emp));
 
             let assigned = { morning: [], noon: [], night: [] };
@@ -280,7 +277,7 @@ function generateMonthlySchedule() {
                 { key: 'night', count: eCount, hours: shiftHours.night }
             ];
 
-            // 2. 安排上班人員至各班別
+            // 安排上班人員至各班別
             shiftsToAssign.forEach(shift => {
                 let available = availableWorkers.filter(emp => 
                     (stats[emp].hours + shift.hours <= 160) && 
@@ -354,18 +351,20 @@ function renderMonthlyTable(monthVal, schedule, stats, employees) {
 
     html += `</table></div>`;
 
-    html += `<h3>【個人工時與休假統計】(上限 160 小時 / 平日目標 4 天休假)</h3>`;
+    html += `<h3>【個人工時與休假統計】(上限 160 小時 / 平日上限 4 天休假)</h3>`;
     html += `<div class="summary-grid">`;
     
     employees.forEach(emp => {
         let h = stats[emp].hours;
-        let isPass = h <= 160;
+        let isPassHours = h <= 160;
         let offDays = stats[emp].weekdayOffs;
+        let isPassOff = offDays <= 4;
+        
         html += `<div class="summary-card">
             <strong>${emp}</strong><br>
-            總工時：<span class="${isPass ? 'pass' : 'warn'}">${h} 小時</span><br>
+            總工時：<span class="${isPassHours ? 'pass' : 'warn'}">${h} 小時</span><br>
             總班次：${stats[emp].shiftsCount} 次<br>
-            平日全休：<span class="${offDays === 4 ? 'pass' : ''}">${offDays} 天</span>
+            平日全休：<span class="${isPassOff ? 'pass' : 'warn'}">${offDays} 天</span>
         </div>`;
     });
     
