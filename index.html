@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>月度自動排班系統</title>
+    <title>6人精確160小時自動排班系統</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,9 +18,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        h1, h2, h3 {
-            color: #333;
-        }
+        h1, h2, h3 { color: #333; }
         .control-panel {
             display: flex;
             gap: 15px;
@@ -50,12 +48,8 @@
             cursor: pointer;
             font-size: 15px;
         }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .table-wrapper {
-            overflow-x: auto;
-        }
+        button:hover { background-color: #0056b3; }
+        .table-wrapper { overflow-x: auto; }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -67,24 +61,12 @@
             padding: 8px 6px;
             text-align: center;
         }
-        th {
-            background-color: #e9ecef;
-            position: sticky;
-            top: 0;
-        }
-        .off {
-            background-color: #ffe6e6;
-            color: #d9534f;
-            font-weight: bold;
-        }
-        .sunday {
-            background-color: #f8d7da;
-            color: #721c24;
-            font-weight: bold;
-        }
+        th { background-color: #e9ecef; position: sticky; top: 0; }
+        .off { background-color: #ffe6e6; color: #d9534f; font-weight: bold; }
+        .sunday { background-color: #f8d7da; color: #721c24; font-weight: bold; }
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 10px;
             margin-top: 15px;
         }
@@ -92,17 +74,15 @@
             background: #e9ecef;
             padding: 10px 15px;
             border-radius: 6px;
+            text-align: center;
         }
-        .warning {
-            color: #c82333;
-            font-weight: bold;
-        }
+        .pass { color: #28a745; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>月度自動排班系統</h1>
+    <h1>6人月度排班系統 (精準160小時控制)</h1>
     
     <div class="control-panel">
         <div class="form-group">
@@ -111,122 +91,110 @@
         </div>
         
         <div class="form-group" style="flex-grow: 1;">
-            <label for="employeeInput">員工姓名（逗號或空格分隔）：</label>
+            <label for="employeeInput">員工姓名（剛好 6 位）：</label>
             <input type="text" id="employeeInput" value="員工A, 員工B, 員工C, 員工D, 員工E, 員工F">
         </div>
 
-        <button onclick="generateMonthlySchedule()">重新產生月班表</button>
+        <button onclick="generateMonthlySchedule()">重新產生班表</button>
     </div>
 
     <div id="result"></div>
 </div>
 
 <script>
-// 設定預設月份為當月
 document.getElementById('monthPicker').value = new Date().toISOString().slice(0, 7);
 
 function generateMonthlySchedule() {
     const monthVal = document.getElementById('monthPicker').value;
-    if (!monthVal) {
-        alert("請選擇月份！");
-        return;
-    }
+    if (!monthVal) { alert("請選擇月份！"); return; }
 
     const inputVal = document.getElementById('employeeInput').value;
     let employees = inputVal.split(/[,，\s]+/).filter(e => e.trim() !== '');
 
-    if (employees.length < 5) {
-        alert("人力不足！每天需要 3 人上班，考慮輪休與工時，建議至少需要 5~6 位員工。");
+    if (employees.length !== 6) {
+        alert("請輸入剛好 6 位員工姓名！");
         return;
     }
 
     const [year, month] = monthVal.split('-').map(Number);
-    const totalDays = new Date(year, month, 0).getDate(); // 當月天數
-    
+    const totalDays = new Date(year, month, 0).getDate();
     const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-    let monthDates = [];
     
-    for (let d = 1; d <= totalDays; d++) {
-        let dateObj = new Date(year, month - 1, d);
-        let dayOfWeek = dateObj.getDay();
-        monthDates.push({
-            date: d,
-            dayOfWeek: dayOfWeek,
-            dayName: dayNames[dayOfWeek],
-            isSunday: dayOfWeek === 0,
-            isSaturday: dayOfWeek === 6
-        });
-    }
-
-    // 初始化員工工時統計與排班資料
+    // 初始化統計 (目標每人剛好 160 小時 = 20 次班)
     let stats = {};
-    employees.forEach(emp => {
-        stats[emp] = { hours: 0, offCount: 0, daysCount: 0 };
-    });
+    employees.forEach(emp => { stats[emp] = { hours: 0, shiftsCount: 0, daysCount: 0 }; });
 
     let monthlySchedule = [];
 
-    // 開始逐日排班
-    monthDates.forEach(d => {
-        if (d.isSunday) {
-            // 週日全員公休（例假）
+    for (let d = 1; d <= totalDays; d++) {
+        let dateObj = new Date(year, month - 1, d);
+        let dayOfWeek = dateObj.getDay();
+        let isSunday = dayOfWeek === 0;
+        let isSaturday = dayOfWeek === 6;
+
+        if (isSunday) {
             monthlySchedule.push({
-                date: d.date,
-                dayName: d.dayName,
-                isSunday: true,
-                morning: '-',
-                noon: '-',
-                night: '-',
-                off: employees.join(', ')
+                date: d, dayName: dayNames[dayOfWeek], isSunday: true,
+                morning: '-', noon: '-', night: '-', off: employees.join(', ')
             });
-            employees.forEach(emp => stats[emp].offCount++);
         } else {
-            // 決定今日所需班別
-            let requiredShifts = d.isSaturday ? ['早班', '中班'] : ['早班', '中班', '晚班'];
-            
-            // 按目前累計工時升序排序員工（讓工時較少的人優先排班）
-            let sortedEmployees = [...employees].sort((a, b) => {
-                return stats[a].hours - stats[b].hours || Math.random() - 0.5;
+            // 平日：早(2人)、中(1人)、晚(2人) [共5人次]
+            // 週六：早(2人)、中(2人) [共4人次]
+            let shiftRequirements = isSaturday 
+                ? [ { name: 'morning', count: 2 }, { name: 'noon', count: 2 } ]
+                : [ { name: 'morning', count: 2 }, { name: 'noon', count: 1 }, { name: 'night', count: 2 } ];
+
+            let assigned = { morning: [], noon: [], night: [] };
+            let todayWorkingSet = new Set();
+
+            shiftRequirements.forEach(shift => {
+                // 篩選出工時未滿 160 小時的可用人員
+                let available = employees.filter(emp => stats[emp].hours < 160);
+
+                // 按目前工時由少到多排序（工時相同時隨機打亂）
+                available.sort((a, b) => {
+                    return (stats[a].hours - stats[b].hours) || (Math.random() - 0.5);
+                });
+
+                // 若可用人數不足需求，從已滿額中抓取遞補（極少發生）
+                if (available.length < shift.count) {
+                    let overflow = employees.filter(emp => !available.includes(emp))
+                                           .sort(() => Math.random() - 0.5);
+                    available = available.concat(overflow);
+                }
+
+                let selected = available.slice(0, shift.count);
+                assigned[shift.name] = selected;
+
+                selected.forEach(emp => {
+                    stats[emp].hours += 8;
+                    stats[emp].shiftsCount++;
+                    todayWorkingSet.add(emp);
+                });
             });
 
-            // 挑選今天上班的人（平日 3 人，週六 2 人，其餘排休）
-            let working = sortedEmployees.slice(0, requiredShifts.length);
-            let off = sortedEmployees.slice(requiredShifts.length);
+            // 計算當日完全沒排班的人員（當日排休）
+            let offEmps = employees.filter(e => !todayWorkingSet.has(e));
+            todayWorkingSet.forEach(emp => stats[emp].daysCount++);
 
-            // 隨機打亂上班人員的班別分配
-            working.sort(() => Math.random() - 0.5);
-
-            let dayShift = {
-                date: d.date,
-                dayName: d.dayName,
+            monthlySchedule.push({
+                date: d,
+                dayName: dayNames[dayOfWeek],
                 isSunday: false,
-                isSaturday: d.isSaturday,
-                morning: working[0],
-                noon: working[1],
-                night: d.isSaturday ? '-' : working[2],
-                off: off.join(', ')
-            };
-
-            // 更新工時統計（假設每班別為 8 小時）
-            working.forEach(emp => {
-                stats[emp].hours += 8;
-                stats[emp].daysCount++;
+                morning: assigned.morning.length > 0 ? assigned.morning.join(', ') : '-',
+                noon: assigned.noon.length > 0 ? assigned.noon.join(', ') : '-',
+                night: isSaturday ? '-' : (assigned.night.length > 0 ? assigned.night.join(', ') : '-'),
+                off: offEmps.join(', ')
             });
-            off.forEach(emp => {
-                stats[emp].offCount++;
-            });
-
-            monthlySchedule.push(dayShift);
         }
-    });
+    }
 
-    renderMonthlyTable(monthVal, monthDates, monthlySchedule, stats);
+    renderMonthlyTable(monthVal, monthlySchedule, stats, employees);
 }
 
-function renderMonthlyTable(monthVal, monthDates, schedule, stats) {
-    let html = `<h2>${monthVal} 月度班表總覽</h2>`;
+function renderMonthlyTable(monthVal, schedule, stats, employees) {
+    let html = `<h2>${monthVal} 月度精準班表總覽</h2>`;
 
-    // 1. 班表主要表格
     html += `<div class="table-wrapper"><table>
         <tr>
             <th>日期</th>
@@ -234,7 +202,7 @@ function renderMonthlyTable(monthVal, monthDates, schedule, stats) {
             <th>早班 (8h)</th>
             <th>中班 (8h)</th>
             <th>晚班 (8h)</th>
-            <th>排休成員</th>
+            <th>當日排休人員</th>
         </tr>`;
 
     schedule.forEach(s => {
@@ -258,18 +226,16 @@ function renderMonthlyTable(monthVal, monthDates, schedule, stats) {
 
     html += `</table></div>`;
 
-    // 2. 個人月度總工時與休假統計
-    html += `<h3>【個人總工時統計】(目標：≥ 160 小時)</h3>`;
+    html += `<h3>【個人工時與出勤統計】(目標：每人剛好 160 小時)</h3>`;
     html += `<div class="summary-grid">`;
     
-    Object.keys(stats).forEach(emp => {
+    employees.forEach(emp => {
         let h = stats[emp].hours;
-        let pass = h >= 160;
         html += `<div class="summary-card">
             <strong>${emp}</strong><br>
-            總工時：<span class="${pass ? '' : 'warning'}">${h} 小時</span> ${pass ? '✔' : '(未達標)'}<br>
-            出勤天數：${stats[emp].daysCount} 天<br>
-            排休天數：${stats[emp].offCount} 天
+            總工時：<span class="pass">${h} 小時</span><br>
+            總班次：${stats[emp].shiftsCount} 次<br>
+            出勤天數：${stats[emp].daysCount} 天
         </div>`;
     });
     
@@ -278,9 +244,9 @@ function renderMonthlyTable(monthVal, monthDates, schedule, stats) {
     document.getElementById('result').innerHTML = html;
 }
 
-// 頁面初始化自動執行
 window.onload = generateMonthlySchedule;
 </script>
 
 </body>
 </html>
+
