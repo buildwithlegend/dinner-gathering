@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>6人精確160小時自動排班系統</title>
+    <title>自動排班系統 (精準160小時)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -82,7 +82,7 @@
 <body>
 
 <div class="container">
-    <h1>6人月度排班系統 (精準160小時控制)</h1>
+    <h1>08:00 - 21:00 三班自動排班系統 (精準160小時)</h1>
     
     <div class="control-panel">
         <div class="form-group">
@@ -120,7 +120,10 @@ function generateMonthlySchedule() {
     const totalDays = new Date(year, month, 0).getDate();
     const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
     
-    // 初始化統計 (目標每人剛好 160 小時 = 20 次班)
+    // 各班別時數配置：早班 4h, 中班 5h, 晚班 4h
+    const shiftHours = { morning: 4, noon: 5, night: 4 };
+
+    // 初始化統計數據（目標每人剛好 160 小時）
     let stats = {};
     employees.forEach(emp => { stats[emp] = { hours: 0, shiftsCount: 0, daysCount: 0 }; });
 
@@ -138,28 +141,30 @@ function generateMonthlySchedule() {
                 morning: '-', noon: '-', night: '-', off: employees.join(', ')
             });
         } else {
-            // 平日：早(2人)、中(1人)、晚(2人) [共5人次]
-            // 週六：早(2人)、中(2人) [共4人次]
+            // 平日：早班 (3人)、中班 (2人)、晚班 (3人)
+            // 週六：早班 (3人)、中班 (3人)
             let shiftRequirements = isSaturday 
-                ? [ { name: 'morning', count: 2 }, { name: 'noon', count: 2 } ]
-                : [ { name: 'morning', count: 2 }, { name: 'noon', count: 1 }, { name: 'night', count: 2 } ];
+                ? [ { name: 'morning', count: 3 }, { name: 'noon', count: 3 } ]
+                : [ { name: 'morning', count: 3 }, { name: 'noon', count: 2 }, { name: 'night', count: 3 } ];
 
             let assigned = { morning: [], noon: [], night: [] };
             let todayWorkingSet = new Set();
 
             shiftRequirements.forEach(shift => {
-                // 篩選出工時未滿 160 小時的可用人員
-                let available = employees.filter(emp => stats[emp].hours < 160);
+                let h = shiftHours[shift.name];
 
-                // 按目前工時由少到多排序（工時相同時隨機打亂）
+                // 篩選出加入此班別後不會超過 160 小時的人員
+                let available = employees.filter(emp => stats[emp].hours + h <= 160);
+
+                // 按目前累積工時由少到多排序
                 available.sort((a, b) => {
                     return (stats[a].hours - stats[b].hours) || (Math.random() - 0.5);
                 });
 
-                // 若可用人數不足需求，從已滿額中抓取遞補（極少發生）
+                // 若可用人數不足，則從剩餘工時最少的人員中補充（極少發生）
                 if (available.length < shift.count) {
                     let overflow = employees.filter(emp => !available.includes(emp))
-                                           .sort(() => Math.random() - 0.5);
+                                           .sort((a, b) => stats[a].hours - stats[b].hours);
                     available = available.concat(overflow);
                 }
 
@@ -167,13 +172,12 @@ function generateMonthlySchedule() {
                 assigned[shift.name] = selected;
 
                 selected.forEach(emp => {
-                    stats[emp].hours += 8;
+                    stats[emp].hours += h;
                     stats[emp].shiftsCount++;
                     todayWorkingSet.add(emp);
                 });
             });
 
-            // 計算當日完全沒排班的人員（當日排休）
             let offEmps = employees.filter(e => !todayWorkingSet.has(e));
             todayWorkingSet.forEach(emp => stats[emp].daysCount++);
 
@@ -193,15 +197,15 @@ function generateMonthlySchedule() {
 }
 
 function renderMonthlyTable(monthVal, schedule, stats, employees) {
-    let html = `<h2>${monthVal} 月度精準班表總覽</h2>`;
+    let html = `<h2>${monthVal} 月度班表總覽</h2>`;
 
     html += `<div class="table-wrapper"><table>
         <tr>
             <th>日期</th>
             <th>星期</th>
-            <th>早班 (8h)</th>
-            <th>中班 (8h)</th>
-            <th>晚班 (8h)</th>
+            <th>早班 (08:00-12:00 / 4h)</th>
+            <th>中班 (12:00-17:00 / 5h)</th>
+            <th>晚班 (17:00-21:00 / 4h)</th>
             <th>當日排休人員</th>
         </tr>`;
 
@@ -249,4 +253,3 @@ window.onload = generateMonthlySchedule;
 
 </body>
 </html>
-
