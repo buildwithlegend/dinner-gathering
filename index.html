@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>自訂人力配額與隨機排班系統</title>
+    <title>自訂人力配額排班系統 (允許跨班 + 精準160h)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -94,12 +94,13 @@
             text-align: center;
         }
         .pass { color: #28a745; font-weight: bold; }
+        .warn { color: #d9534f; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>08:00 - 21:00 自訂人力配額隨機排班系統</h1>
+    <h1>08:00 - 21:00 彈性排班系統 (允許單日跨班 + 不超160h)</h1>
     
     <div class="control-panel">
         <div class="form-row">
@@ -109,37 +110,33 @@
             </div>
             
             <div class="form-group" style="flex-grow: 1;">
-                <label for="employeeInput"><strong>員工姓名（固定 6 位）：</strong></label>
+                <label for="employeeInput"><strong>員工姓名（6 位）：</strong></label>
                 <input type="text" id="employeeInput" value="員工A, 員工B, 員工C, 員工D, 員工E, 員工F">
             </div>
         </div>
 
         <hr style="border: 0; border-top: 1px solid #dee2e6; margin: 15px 0;">
 
-        <h3>平日 / 週六 每日人力需求設定（總和需剛好等於 6 人）：</h3>
+        <h3>平日 / 週六 每日各班別需上班人數（可自由輸入）：</h3>
         <div class="form-row">
             <div class="form-group">
                 <label>早班 (08-12 / 4h)</label>
-                <input type="number" id="morningCount" class="number-input" value="2" min="0" max="6">
+                <input type="number" id="morningCount" class="number-input" value="3" min="0" max="6">
             </div>
             <div class="form-group">
                 <label>中班 (12-17 / 5h)</label>
-                <input type="number" id="noonCount" class="number-input" value="2" min="0" max="6">
+                <input type="number" id="noonCount" class="number-input" value="3" min="0" max="6">
             </div>
             <div class="form-group">
                 <label>晚班 (17-21 / 4h)</label>
-                <input type="number" id="nightCount" class="number-input" value="1" min="0" max="6">
-            </div>
-            <div class="form-group">
-                <label style="color:#d9534f; font-weight:bold;">排休人數</label>
-                <input type="number" id="offCount" class="number-input" value="1" min="0" max="6">
+                <input type="number" id="nightCount" class="number-input" value="3" min="0" max="6">
             </div>
             
             <div class="form-group" style="margin-left: auto; align-self: flex-end;">
-                <button onclick="generateMonthlySchedule()">隨機產生班表</button>
+                <button onclick="generateMonthlySchedule()">自動產生班表</button>
             </div>
         </div>
-        <div class="hint">預設組合範例：早班 2 + 中班 2 + 晚班 1 + 排休 1 = 6 人（可自行修改）</div>
+        <div class="hint">說明：允許同一名員工一天排多個班別（如早+中），只要個人總工時不超過 160 小時。</div>
     </div>
 
     <div id="result"></div>
@@ -155,22 +152,14 @@ function generateMonthlySchedule() {
     const inputVal = document.getElementById('employeeInput').value;
     let employees = inputVal.split(/[,，\s]+/).filter(e => e.trim() !== '');
 
-    if (employees.length !== 6) {
-        alert("請輸入剛好 6 位員工姓名！");
+    if (employees.length === 0) {
+        alert("請輸入員工姓名！");
         return;
     }
 
-    // 取得自訂的人數設定
     const mCount = parseInt(document.getElementById('morningCount').value) || 0;
     const nCount = parseInt(document.getElementById('noonCount').value) || 0;
     const eCount = parseInt(document.getElementById('nightCount').value) || 0;
-    const oCount = parseInt(document.getElementById('offCount').value) || 0;
-
-    const totalInput = mCount + nCount + eCount + oCount;
-    if (totalInput !== 6) {
-        alert(`每日設定的人數總和必須剛好等於 6 人！\n目前設定：早(${mCount}) + 中(${nCount}) + 晚(${eCount}) + 休(${oCount}) = ${totalInput}人`);
-        return;
-    }
 
     const [year, month] = monthVal.split('-').map(Number);
     const totalDays = new Date(year, month, 0).getDate();
@@ -196,25 +185,39 @@ function generateMonthlySchedule() {
                 morning: '-', noon: '-', night: '-', off: employees.join(', ')
             });
         } else {
-            // 隨機打亂當天的員工順序
-            let shuffledEmployees = [...employees].sort(() => Math.random() - 0.5);
+            let assigned = { morning: [], noon: [], night: [] };
+            let todayWorkingSet = new Set();
 
-            // 優先考慮工時較少的人，進行微幅排序（平衡工時）
-            shuffledEmployees.sort((a, b) => (stats[a].hours - stats[b].hours) + (Math.random() - 0.5));
+            const shiftsToAssign = [
+                { key: 'morning', count: mCount, hours: shiftHours.morning },
+                { key: 'noon', count: nCount, hours: shiftHours.noon },
+                { key: 'night', count: eCount, hours: shiftHours.night }
+            ];
 
-            let assigned = { morning: [], noon: [], night: [], off: [] };
+            shiftsToAssign.forEach(shift => {
+                // 篩選：加入此班別後總工時 <= 160h，且該班別尚未排過此人
+                let available = employees.filter(emp => 
+                    (stats[emp].hours + shift.hours <= 160) && 
+                    !assigned[shift.key].includes(emp)
+                );
 
-            // 依自訂人數分配
-            assigned.morning = shuffledEmployees.splice(0, mCount);
-            assigned.noon = shuffledEmployees.splice(0, nCount);
-            assigned.night = shuffledEmployees.splice(0, eCount);
-            assigned.off = shuffledEmployees; // 剩餘即為排休人員
+                // 按目前總工時由少到多排序，優先排給工時不足者
+                available.sort((a, b) => (stats[a].hours - stats[b].hours) || (Math.random() - 0.5));
 
-            // 更新統計數據
-            assigned.morning.forEach(emp => { stats[emp].hours += shiftHours.morning; stats[emp].shiftsCount++; stats[emp].daysCount++; });
-            assigned.noon.forEach(emp => { stats[emp].hours += shiftHours.noon; stats[emp].shiftsCount++; stats[emp].daysCount++; });
-            assigned.night.forEach(emp => { stats[emp].hours += shiftHours.night; stats[emp].shiftsCount++; stats[emp].daysCount++; });
-            assigned.off.forEach(emp => { stats[emp].weekdayOffs++; });
+                let selected = available.slice(0, shift.count);
+                assigned[shift.key] = selected;
+
+                selected.forEach(emp => {
+                    stats[emp].hours += shift.hours;
+                    stats[emp].shiftsCount++;
+                    todayWorkingSet.add(emp);
+                });
+            });
+
+            // 統計當天出勤天數與完全沒班的排休人員
+            todayWorkingSet.forEach(emp => stats[emp].daysCount++);
+            let offEmps = employees.filter(e => !todayWorkingSet.has(e));
+            offEmps.forEach(emp => stats[emp].weekdayOffs++);
 
             monthlySchedule.push({
                 date: d,
@@ -223,17 +226,17 @@ function generateMonthlySchedule() {
                 morning: assigned.morning.length > 0 ? assigned.morning.join(', ') : '-',
                 noon: assigned.noon.length > 0 ? assigned.noon.join(', ') : '-',
                 night: assigned.night.length > 0 ? assigned.night.join(', ') : '-',
-                off: assigned.off.length > 0 ? assigned.off.join(', ') : '-'
+                off: offEmps.length > 0 ? offEmps.join(', ') : '無休'
             });
         }
     }
 
-    renderMonthlyTable(monthVal, monthlySchedule, stats, employees, { mCount, nCount, eCount, oCount });
+    renderMonthlyTable(monthVal, monthlySchedule, stats, employees, { mCount, nCount, eCount });
 }
 
 function renderMonthlyTable(monthVal, schedule, stats, employees, config) {
-    let html = `<h2>${monthVal} 月度隨機班表總覽</h2>`;
-    html += `<p style="color: #666;">（每日設定配置：早班 ${config.mCount}人 / 中班 ${config.nCount}人 / 晚班 ${config.eCount}人 / 排休 ${config.oCount}人）</p>`;
+    let html = `<h2>${monthVal} 月度班表總覽</h2>`;
+    html += `<p style="color: #666;">（每日需求：早班 ${config.mCount}人 / 中班 ${config.nCount}人 / 晚班 ${config.eCount}人）</p>`;
 
     html += `<div class="table-wrapper"><table>
         <tr>
@@ -242,7 +245,7 @@ function renderMonthlyTable(monthVal, schedule, stats, employees, config) {
             <th>早班 (08:00-12:00 / 4h)</th>
             <th>中班 (12:00-17:00 / 5h)</th>
             <th>晚班 (17:00-21:00 / 4h)</th>
-            <th>當日排休人員 (${config.oCount}位)</th>
+            <th>全日排休人員</th>
         </tr>`;
 
     schedule.forEach(s => {
@@ -266,16 +269,17 @@ function renderMonthlyTable(monthVal, schedule, stats, employees, config) {
 
     html += `</table></div>`;
 
-    html += `<h3>【個人工時與休假統計】(目標：每人 160h 左右)</h3>`;
+    html += `<h3>【個人工時統計】(上限 160 小時)</h3>`;
     html += `<div class="summary-grid">`;
     
     employees.forEach(emp => {
         let h = stats[emp].hours;
+        let isPass = h <= 160;
         html += `<div class="summary-card">
             <strong>${emp}</strong><br>
-            總工時：<span class="pass">${h} 小時</span><br>
-            出勤天數：${stats[emp].daysCount} 天<br>
-            平日排休：${stats[emp].weekdayOffs} 天
+            總工時：<span class="${isPass ? 'pass' : 'warn'}">${h} 小時</span><br>
+            總班次：${stats[emp].shiftsCount} 次<br>
+            平日全休：${stats[emp].weekdayOffs} 天
         </div>`;
     });
     
