@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>自訂人力配額排班系統 (允許跨班 + 精準160h)</title>
+    <title>逐日自訂人力與排班系統</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,7 +11,7 @@
             background-color: #f5f5f5;
         }
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
             background: #fff;
             padding: 20px;
@@ -38,22 +38,22 @@
             flex-direction: column;
             gap: 5px;
         }
-        .number-input {
-            width: 70px;
-            padding: 6px;
-            text-align: center;
+        input[type="text"], input[type="month"] {
+            padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-        input[type="text"], input[type="month"] {
-            padding: 8px;
+        .num-input {
+            width: 45px;
+            padding: 4px;
+            text-align: center;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
         button {
             background-color: #007bff;
             color: white;
-            padding: 10px 20px;
+            padding: 9px 18px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
@@ -61,24 +61,38 @@
             font-weight: bold;
         }
         button:hover { background-color: #0056b3; }
-        .hint {
+        .btn-sec {
+            background-color: #6c757d;
+            padding: 6px 12px;
             font-size: 13px;
-            color: #6c757d;
-            margin-top: 5px;
         }
+        .btn-sec:hover { background-color: #5a6268; }
+        .daily-setting-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+        .daily-setting-table th, .daily-setting-table td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: center;
+        }
+        .daily-setting-table th { background-color: #e9ecef; }
+        .sun-row { background-color: #f8d7da; }
         .table-wrapper { overflow-x: auto; }
-        table {
+        table.result-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
             font-size: 14px;
         }
-        th, td {
+        table.result-table th, table.result-table td {
             border: 1px solid #ddd;
             padding: 8px 6px;
             text-align: center;
         }
-        th { background-color: #e9ecef; position: sticky; top: 0; }
+        table.result-table th { background-color: #e9ecef; position: sticky; top: 0; }
         .off { background-color: #ffe6e6; color: #d9534f; font-weight: bold; }
         .sunday { background-color: #f8d7da; color: #721c24; font-weight: bold; }
         .summary-grid {
@@ -100,43 +114,49 @@
 <body>
 
 <div class="container">
-    <h1>08:00 - 21:00 彈性排班系統 (允許單日跨班 + 不超160h)</h1>
+    <h1>08:00 - 21:00 逐日自訂人數排班系統 (上限160h)</h1>
     
     <div class="control-panel">
         <div class="form-row">
             <div class="form-group">
-                <label for="monthPicker"><strong>選擇月份：</strong></label>
-                <input type="month" id="monthPicker">
+                <label for="monthPicker"><strong>1. 選擇月份：</strong></label>
+                <input type="month" id="monthPicker" onchange="renderDailyInputTable()">
             </div>
             
             <div class="form-group" style="flex-grow: 1;">
-                <label for="employeeInput"><strong>員工姓名（6 位）：</strong></label>
+                <label for="employeeInput"><strong>2. 員工姓名（6 位）：</strong></label>
                 <input type="text" id="employeeInput" value="員工A, 員工B, 員工C, 員工D, 員工E, 員工F">
             </div>
         </div>
 
         <hr style="border: 0; border-top: 1px solid #dee2e6; margin: 15px 0;">
 
-        <h3>平日 / 週六 每日各班別需上班人數（可自由輸入）：</h3>
-        <div class="form-row">
-            <div class="form-group">
-                <label>早班 (08-12 / 4h)</label>
-                <input type="number" id="morningCount" class="number-input" value="3" min="0" max="6">
-            </div>
-            <div class="form-group">
-                <label>中班 (12-17 / 5h)</label>
-                <input type="number" id="noonCount" class="number-input" value="3" min="0" max="6">
-            </div>
-            <div class="form-group">
-                <label>晚班 (17-21 / 4h)</label>
-                <input type="number" id="nightCount" class="number-input" value="3" min="0" max="6">
-            </div>
-            
-            <div class="form-group" style="margin-left: auto; align-self: flex-end;">
-                <button onclick="generateMonthlySchedule()">自動產生班表</button>
-            </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>3. 逐日輸入各班別與排休需求人數：</h3>
+            <button class="btn-sec" onclick="applyDefaultValues()">一鍵快速帶入預設值 (早3/中3/晚3)</button>
         </div>
-        <div class="hint">說明：允許同一名員工一天排多個班別（如早+中），只要個人總工時不超過 160 小時。</div>
+
+        <div class="table-wrapper">
+            <table class="daily-setting-table">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>星期</th>
+                        <th>早班 (08-12 / 4h)</th>
+                        <th>中班 (12-17 / 5h)</th>
+                        <th>晚班 (17-21 / 4h)</th>
+                        <th>排休/例假說明</th>
+                    </tr>
+                </thead>
+                <tbody id="dailyTableBody">
+                    <!-- 動態產生每日設定欄位 -->
+                </tbody>
+            </table>
+        </div>
+
+        <div style="text-align: right; margin-top: 15px;">
+            <button onclick="generateMonthlySchedule()">依據上述設定產生班表</button>
+        </div>
     </div>
 
     <div id="result"></div>
@@ -144,6 +164,52 @@
 
 <script>
 document.getElementById('monthPicker').value = new Date().toISOString().slice(0, 7);
+
+function renderDailyInputTable() {
+    const monthVal = document.getElementById('monthPicker').value;
+    if (!monthVal) return;
+
+    const [year, month] = monthVal.split('-').map(Number);
+    const totalDays = new Date(year, month, 0).getDate();
+    const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+
+    let tbody = document.getElementById('dailyTableBody');
+    tbody.innerHTML = '';
+
+    for (let d = 1; d <= totalDays; d++) {
+        let dateObj = new Date(year, month - 1, d);
+        let dayOfWeek = dateObj.getDay();
+        let isSunday = dayOfWeek === 0;
+
+        let tr = document.createElement('tr');
+        if (isSunday) tr.className = 'sun-row';
+
+        tr.innerHTML = `
+            <td><strong>${d} 日</strong></td>
+            <td>週${dayNames[dayOfWeek]}</td>
+            <td><input type="number" id="m_${d}" class="num-input" value="${isSunday ? 0 : 3}" min="0" max="6"></td>
+            <td><input type="number" id="n_${d}" class="num-input" value="${isSunday ? 0 : 3}" min="0" max="6"></td>
+            <td><input type="number" id="e_${d}" class="num-input" value="${isSunday ? 0 : 3}" min="0" max="6"></td>
+            <td style="color: #666;">${isSunday ? '週日預設全店公休' : '可依需要調整上方人數'}</td>
+        `;
+        tbody.appendChild(tr);
+    }
+}
+
+function applyDefaultValues() {
+    const monthVal = document.getElementById('monthPicker').value;
+    const [year, month] = monthVal.split('-').map(Number);
+    const totalDays = new Date(year, month, 0).getDate();
+
+    for (let d = 1; d <= totalDays; d++) {
+        let dayOfWeek = new Date(year, month - 1, d).getDay();
+        if (dayOfWeek !== 0) { // 非週日
+            document.getElementById(`m_${d}`).value = 3;
+            document.getElementById(`n_${d}`).value = 3;
+            document.getElementById(`e_${d}`).value = 3;
+        }
+    }
+}
 
 function generateMonthlySchedule() {
     const monthVal = document.getElementById('monthPicker').value;
@@ -157,14 +223,9 @@ function generateMonthlySchedule() {
         return;
     }
 
-    const mCount = parseInt(document.getElementById('morningCount').value) || 0;
-    const nCount = parseInt(document.getElementById('noonCount').value) || 0;
-    const eCount = parseInt(document.getElementById('nightCount').value) || 0;
-
     const [year, month] = monthVal.split('-').map(Number);
     const totalDays = new Date(year, month, 0).getDate();
     const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-    
     const shiftHours = { morning: 4, noon: 5, night: 4 };
 
     let stats = {};
@@ -179,9 +240,13 @@ function generateMonthlySchedule() {
         let dayOfWeek = dateObj.getDay();
         let isSunday = dayOfWeek === 0;
 
-        if (isSunday) {
+        let mCount = parseInt(document.getElementById(`m_${d}`).value) || 0;
+        let nCount = parseInt(document.getElementById(`n_${d}`).value) || 0;
+        let eCount = parseInt(document.getElementById(`e_${d}`).value) || 0;
+
+        if (mCount === 0 && nCount === 0 && eCount === 0) {
             monthlySchedule.push({
-                date: d, dayName: dayNames[dayOfWeek], isSunday: true,
+                date: d, dayName: dayNames[dayOfWeek], isOffDay: true,
                 morning: '-', noon: '-', night: '-', off: employees.join(', ')
             });
         } else {
@@ -195,13 +260,13 @@ function generateMonthlySchedule() {
             ];
 
             shiftsToAssign.forEach(shift => {
-                // 篩選：加入此班別後總工時 <= 160h，且該班別尚未排過此人
+                // 篩選：累計工時未超過 160h 且該班別未排過此人
                 let available = employees.filter(emp => 
                     (stats[emp].hours + shift.hours <= 160) && 
                     !assigned[shift.key].includes(emp)
                 );
 
-                // 按目前總工時由少到多排序，優先排給工時不足者
+                // 按目前總工時排序（優先分配給低工時者）
                 available.sort((a, b) => (stats[a].hours - stats[b].hours) || (Math.random() - 0.5));
 
                 let selected = available.slice(0, shift.count);
@@ -214,7 +279,6 @@ function generateMonthlySchedule() {
                 });
             });
 
-            // 統計當天出勤天數與完全沒班的排休人員
             todayWorkingSet.forEach(emp => stats[emp].daysCount++);
             let offEmps = employees.filter(e => !todayWorkingSet.has(e));
             offEmps.forEach(emp => stats[emp].weekdayOffs++);
@@ -222,7 +286,7 @@ function generateMonthlySchedule() {
             monthlySchedule.push({
                 date: d,
                 dayName: dayNames[dayOfWeek],
-                isSunday: false,
+                isOffDay: false,
                 morning: assigned.morning.length > 0 ? assigned.morning.join(', ') : '-',
                 noon: assigned.noon.length > 0 ? assigned.noon.join(', ') : '-',
                 night: assigned.night.length > 0 ? assigned.night.join(', ') : '-',
@@ -231,14 +295,13 @@ function generateMonthlySchedule() {
         }
     }
 
-    renderMonthlyTable(monthVal, monthlySchedule, stats, employees, { mCount, nCount, eCount });
+    renderMonthlyTable(monthVal, monthlySchedule, stats, employees);
 }
 
-function renderMonthlyTable(monthVal, schedule, stats, employees, config) {
+function renderMonthlyTable(monthVal, schedule, stats, employees) {
     let html = `<h2>${monthVal} 月度班表總覽</h2>`;
-    html += `<p style="color: #666;">（每日需求：早班 ${config.mCount}人 / 中班 ${config.nCount}人 / 晚班 ${config.eCount}人）</p>`;
 
-    html += `<div class="table-wrapper"><table>
+    html += `<div class="table-wrapper"><table class="result-table">
         <tr>
             <th>日期</th>
             <th>星期</th>
@@ -249,11 +312,11 @@ function renderMonthlyTable(monthVal, schedule, stats, employees, config) {
         </tr>`;
 
     schedule.forEach(s => {
-        if (s.isSunday) {
+        if (s.isOffDay) {
             html += `<tr class="sunday">
                 <td>${s.date} 日</td>
                 <td>週${s.dayName}</td>
-                <td colspan="4">全店公休 (例假日)</td>
+                <td colspan="4">全店公休 / 無排班</td>
             </tr>`;
         } else {
             html += `<tr>
@@ -288,7 +351,8 @@ function renderMonthlyTable(monthVal, schedule, stats, employees, config) {
     document.getElementById('result').innerHTML = html;
 }
 
-window.onload = generateMonthlySchedule;
+// 初始化渲染當月逐日輸入表
+window.onload = renderDailyInputTable;
 </script>
 
 </body>
