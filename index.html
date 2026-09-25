@@ -1,510 +1,711 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>逐日自訂班別與排休系統 (含當日個人工時顯示)</title>
+    <title>暖心日誌 - 雲端同步版</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK (v10) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ==========================================
+        // ⚠️ 請在這裡貼上您的 Firebase 設定 (Firebase Config)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // 檢查是否已設定金鑰
+        const isFirebaseConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+        let db = null;
+        if (isFirebaseConfigured) {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                window.db = db;
+                window.firebaseCollections = { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy };
+            } catch (e) {
+                console.error("Firebase 初始化失敗:", e);
+            }
+        }
+
+        window.isFirebaseConfigured = isFirebaseConfigured;
+    </script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d',
+                            400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309',
+                            800: '#92400e', 900: '#78350f',
+                        },
+                        warmBg: '#fbf7f4',
+                    },
+                    fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
+            background-color: #fbf7f4;
+            background-image: radial-gradient(#e5d7ce 0.75px, transparent 0.75px);
+            background-size: 16px 16px;
         }
-        .container {
-            max-width: 1250px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        h1, h2, h3 { color: #333; }
-        .control-panel {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            border: 1px solid #e9ecef;
-        }
-        .form-row {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        input[type="text"], input[type="month"] {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .num-input {
-            width: 50px;
-            padding: 4px;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 9px 18px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: bold;
-        }
-        button:hover { background-color: #0056b3; }
-        .btn-sec {
-            background-color: #6c757d;
-            padding: 6px 12px;
-            font-size: 13px;
-        }
-        .btn-sec:hover { background-color: #5a6268; }
-        
-        /* 週區塊與表格卡片樣式 */
-        .week-card {
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            background: #fff;
+        .line-clamp-3-custom {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        .week-header {
-            background-color: #495057;
-            color: #fff;
-            padding: 8px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .result-header {
-            background-color: #343a40;
-        }
-        .btn-toggle-week {
-            background-color: #17a2b8;
-            color: white;
-            padding: 4px 10px;
-            font-size: 12px;
-            border-radius: 3px;
-            border: none;
-            cursor: pointer;
-        }
-        .btn-toggle-week:hover { background-color: #138496; }
-
-        .daily-setting-table, table.result-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .daily-setting-table th, .daily-setting-table td,
-        table.result-table th, table.result-table td {
-            border: 1px solid #ddd;
-            padding: 6px;
-            text-align: center;
-        }
-        .daily-setting-table th, table.result-table th { background-color: #e9ecef; }
-        .sun-row { background-color: #f8d7da; }
-        .table-wrapper { overflow-x: auto; }
-        
-        .off { background-color: #ffe6e6; color: #d9534f; font-weight: bold; }
-        .sunday { background-color: #f8d7da; color: #721c24; font-weight: bold; }
-        .work-hours-cell { background-color: #f0f7ff; color: #0056b3; text-align: left !important; padding-left: 10px !important; }
-        
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .summary-card {
-            background: #e9ecef;
-            padding: 10px 15px;
-            border-radius: 6px;
-            text-align: center;
-        }
-        .pass { color: #28a745; font-weight: bold; }
-        .warn { color: #d9534f; font-weight: bold; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #fcd34d; border-radius: 10px; }
     </style>
 </head>
-<body>
+<body class="font-sans text-amber-900 min-h-screen flex flex-col justify-between">
 
-<div class="container">
-    <h1>08:00 - 21:00 逐日自訂班別與排休系統</h1>
-    
-    <div class="control-panel">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="monthPicker"><strong>1. 選擇月份：</strong></label>
-                <input type="month" id="monthPicker" onchange="renderDailyInputTable()">
+    <!-- Config Warning Banner (若未設定 Firebase 則提示) -->
+    <div id="config-warning" class="bg-amber-500 text-white text-xs font-medium py-2.5 px-4 text-center shadow-inner hidden">
+        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>
+        目前為「單機展示模式」。要實現多裝置（手機/電腦）跨裝置同步，請建立免費 Firebase 專案並貼入金鑰設定。
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-30 bg-amber-50/90 backdrop-blur-md border-b border-amber-200/60 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-white shadow-md">
+                    <i class="fa-solid fa-cloud-sun font-bold text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-amber-900 tracking-wide">暖心日誌</h1>
+                    <p class="text-xs text-amber-600">跨裝置雲端相簿與日誌卡片</p>
+                </div>
             </div>
-            
-            <div class="form-group" style="flex-grow: 1;">
-                <label for="employeeInput"><strong>2. 員工姓名（預設 6 位）：</strong></label>
-                <input type="text" id="employeeInput" value="麗菁, 嘉明, 哲嘉, 俊德, 敏琪, 員工F">
+
+            <!-- View Tabs -->
+            <div class="flex bg-amber-100/70 p-1 rounded-xl border border-amber-200/80">
+                <button id="tab-cards-btn" onclick="switchTab('cards')" class="px-4 py-1.5 rounded-lg text-sm font-medium transition bg-white text-amber-900 shadow-sm">
+                    <i class="fa-regular fa-clone mr-1.5"></i>卡片日誌
+                </button>
+                <button id="tab-album-btn" onclick="switchTab('album')" class="px-4 py-1.5 rounded-lg text-sm font-medium transition text-amber-700 hover:text-amber-900">
+                    <i class="fa-regular fa-images mr-1.5"></i>照片相簿
+                </button>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-2">
+                <input type="date" id="filter-date" class="bg-white border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-sm">
+                <button id="clear-filter" title="清除篩選" class="hidden bg-amber-100 hover:bg-amber-200 text-amber-700 px-2.5 py-1.5 rounded-xl text-xs transition">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+                <button id="action-add-btn" onclick="openCreateModal()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-medium px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-plus"></i> <span id="add-btn-text">新增卡片</span>
+                </button>
             </div>
         </div>
+    </header>
 
-        <hr style="border: 0; border-top: 1px solid #dee2e6; margin: 15px 0;">
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
+        <!-- Filter Info Bar -->
+        <div id="filter-info" class="hidden mb-4 bg-amber-100/80 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-800 flex justify-between items-center">
+            <span>顯示日期：<strong id="filter-date-display"></strong></span>
+            <button onclick="resetFilter()" class="text-amber-600 hover:text-amber-900 font-medium underline">顯示全部</button>
+        </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-            <h3>3. 逐日輸入各班別與休假人數：</h3>
-            <div>
-                <button class="btn-sec" onclick="toggleInputWeeks(true)">全展開設定</button>
-                <button class="btn-sec" onclick="toggleInputWeeks(false)">全隱藏設定</button>
-                <button class="btn-sec" onclick="applyDefaultValues()" style="background-color: #28a745;">一鍵帶入預設 (早3/中3/晚3/休1)</button>
+        <!-- Section 1: Cards Grid View -->
+        <section id="cards-view" class="space-y-6">
+            <div id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="cards-empty" class="hidden flex-col items-center justify-center py-16 text-center">
+                <div class="w-16 h-16 bg-amber-100 text-amber-400 rounded-full flex items-center justify-center text-2xl mb-3"><i class="fa-regular fa-folder-open"></i></div>
+                <h3 class="text-base font-medium text-amber-800 mb-1">尚無卡片</h3>
+                <p class="text-xs text-amber-600 mb-4">發布第一張溫暖的紀錄吧！</p>
+                <button onclick="openCreateModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs transition">建立卡片</button>
             </div>
-        </div>
+        </section>
 
-        <div id="inputWeeksContainer">
-            <!-- 動態產生按週分組的輸入表格 -->
-        </div>
+        <!-- Section 2: Album View -->
+        <section id="album-view" class="hidden space-y-6">
+            <div id="album-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+            <div id="album-empty" class="hidden flex-col items-center justify-center py-16 text-center">
+                <div class="w-16 h-16 bg-amber-100 text-amber-400 rounded-full flex items-center justify-center text-2xl mb-3"><i class="fa-regular fa-image"></i></div>
+                <h3 class="text-base font-medium text-amber-800 mb-1">相簿裡還沒有照片</h3>
+                <p class="text-xs text-amber-600 mb-4">上傳美好照片到雲端相簿吧！</p>
+                <button onclick="openAlbumUploadModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs transition">上傳照片</button>
+            </div>
+        </section>
+    </main>
 
-        <div style="text-align: right; margin-top: 15px;">
-            <button onclick="generateMonthlySchedule()">開始產生班表</button>
+    <!-- Footer -->
+    <footer class="py-4 text-center text-xs text-amber-600/80 border-t border-amber-200/40">
+        <p>© 暖心日誌 · 跨裝置雲端同步版</p>
+    </footer>
+
+    <!-- Modal: Card Create / Edit -->
+    <div id="modal-card" class="fixed inset-0 bg-amber-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-amber-100 overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-amber-50 px-5 py-3.5 border-b border-amber-100 flex justify-between items-center shrink-0">
+                <h3 id="card-modal-title" class="font-bold text-amber-900 text-sm flex items-center gap-2"><i class="fa-solid fa-pen-to-square text-amber-500"></i> 新增卡片</h3>
+                <button onclick="closeCardModal()" class="text-amber-400 hover:text-amber-700"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="card-form" onsubmit="handleSaveCard(event)" class="p-5 space-y-3.5 overflow-y-auto custom-scrollbar flex-1">
+                <input type="hidden" id="card-edit-id">
+                <div>
+                    <label class="block text-xs font-semibold text-amber-800 mb-1">主題</label>
+                    <input type="text" id="card-topic" placeholder="例如：生活隨筆、美食..." required class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-amber-800 mb-1">標題</label>
+                    <input type="text" id="card-title" placeholder="卡片標題" required class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-amber-800 mb-1">日期</label>
+                    <input type="date" id="card-date" required class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-amber-800 mb-1">相片 (可選)</label>
+                    <input type="file" id="card-image-input" accept="image/*" onchange="previewCardImage(event)" class="w-full text-xs text-amber-700 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200">
+                    <div id="card-image-preview-container" class="mt-2 relative hidden rounded-xl overflow-hidden border border-amber-200 max-h-40">
+                        <img id="card-image-preview" class="w-full h-full object-cover">
+                        <button type="button" onclick="removeCardImage()" class="absolute top-1.5 right-1.5 bg-red-500/80 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-amber-800 mb-1">內容</label>
+                    <textarea id="card-content" rows="4" placeholder="詳細文字內容..." required class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeCardModal()" class="px-3.5 py-1.5 rounded-xl text-xs text-amber-700 bg-amber-100 hover:bg-amber-200">取消</button>
+                    <button type="submit" class="px-4 py-1.5 rounded-xl text-xs text-white bg-amber-500 hover:bg-amber-600 shadow font-medium">儲存卡片</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <div id="result"></div>
-</div>
-
-<script>
-document.getElementById('monthPicker').value = new Date().toISOString().slice(0, 7);
-
-function renderDailyInputTable() {
-    const monthVal = document.getElementById('monthPicker').value;
-    if (!monthVal) return;
-
-    const [year, month] = monthVal.split('-').map(Number);
-    const totalDays = new Date(year, month, 0).getDate();
-    const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-
-    let container = document.getElementById('inputWeeksContainer');
-    container.innerHTML = '';
-
-    let weeks = [];
-    let currentWeek = [];
-
-    for (let d = 1; d <= totalDays; d++) {
-        let dateObj = new Date(year, month - 1, d);
-        let dayOfWeek = dateObj.getDay();
-
-        if (dayOfWeek === 0 && currentWeek.length > 0) {
-            weeks.push(currentWeek);
-            currentWeek = [];
-        }
-        currentWeek.push({ day: d, dayOfWeek: dayOfWeek });
-        if (d === totalDays) {
-            weeks.push(currentWeek);
-        }
-    }
-
-    weeks.forEach((weekData, wIndex) => {
-        let weekNum = wIndex + 1;
-        let startDate = weekData[0].day;
-        let endDate = weekData[weekData.length - 1].day;
-
-        let weekCard = document.createElement('div');
-        weekCard.className = 'week-card';
-
-        let html = `
-            <div class="week-header">
-                <span>第 ${weekNum} 週 (${month}月${startDate}日 ~ ${month}月${endDate}日)</span>
-                <button class="btn-toggle-week" onclick="toggleBlock('input_week_${weekNum}', this)">隱藏當週</button>
+    <!-- Modal: Card Full Detail -->
+    <div id="modal-detail" class="fixed inset-0 bg-amber-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-amber-100 overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-amber-50 px-5 py-3.5 border-b border-amber-100 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <span id="detail-topic" class="text-xs px-2.5 py-0.5 rounded bg-amber-200 text-amber-800 font-medium">主題</span>
+                    <span id="detail-date" class="text-xs text-amber-600">日期</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button id="detail-edit-btn" title="編輯" class="text-amber-600 hover:text-amber-800 p-1 rounded hover:bg-amber-100"><i class="fa-regular fa-pen-to-square"></i></button>
+                    <button id="detail-delete-btn" title="刪除" class="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50"><i class="fa-regular fa-trash-can"></i></button>
+                    <button onclick="closeDetailModal()" class="text-amber-400 hover:text-amber-700 p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
             </div>
-            <div class="table-wrapper" id="input_week_${weekNum}">
-                <table class="daily-setting-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 8%;">日期</th>
-                            <th style="width: 8%;">星期</th>
-                            <th>早班 (08-12 / 4h)</th>
-                            <th>中班 (12-17 / 5h)</th>
-                            <th>晚班 (17-21 / 4h)</th>
-                            <th style="color:#d9534f;">休假人數</th>
-                            <th style="width: 20%;">說明</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-
-        weekData.forEach(item => {
-            let d = item.day;
-            let dayOfWeek = item.dayOfWeek;
-            let isSunday = dayOfWeek === 0;
-
-            html += `
-                <tr class="${isSunday ? 'sun-row' : ''}">
-                    <td><strong>${d} 日</strong></td>
-                    <td>週${dayNames[dayOfWeek]}</td>
-                    <td><input type="number" id="m_${d}" class="num-input" value="${isSunday ? 0 : 3}" min="0"></td>
-                    <td><input type="number" id="n_${d}" class="num-input" value="${isSunday ? 0 : 3}" min="0"></td>
-                    <td><input type="number" id="e_${d}" class="num-input" value="${isSunday ? 0 : 3}" min="0"></td>
-                    <td><input type="number" id="o_${d}" class="num-input" value="${isSunday ? 6 : 1}" min="0" style="color:#d9534f; font-weight:bold;"></td>
-                    <td style="color: #666; font-size: 12px;">${isSunday ? '週日預設全店公休' : '可隨時手動微調'}</td>
-                </tr>`;
-        });
-
-        html += `</tbody></table></div>`;
-        weekCard.innerHTML = html;
-        container.appendChild(weekCard);
-    });
-}
-
-function applyDefaultValues() {
-    const monthVal = document.getElementById('monthPicker').value;
-    const [year, month] = monthVal.split('-').map(Number);
-    const totalDays = new Date(year, month, 0).getDate();
-
-    for (let d = 1; d <= totalDays; d++) {
-        let dayOfWeek = new Date(year, month - 1, d).getDay();
-        if (dayOfWeek !== 0) {
-            document.getElementById(`m_${d}`).value = 3;
-            document.getElementById(`n_${d}`).value = 3;
-            document.getElementById(`e_${d}`).value = 3;
-            document.getElementById(`o_${d}`).value = 1;
-        }
-    }
-}
-
-function generateMonthlySchedule() {
-    const monthVal = document.getElementById('monthPicker').value;
-    if (!monthVal) { alert("請選擇月份！"); return; }
-
-    const inputVal = document.getElementById('employeeInput').value;
-    let employees = inputVal.split(/[,，\s]+/).filter(e => e.trim() !== '');
-
-    if (employees.length === 0) {
-        alert("請輸入員工姓名！");
-        return;
-    }
-
-    const [year, month] = monthVal.split('-').map(Number);
-    const totalDays = new Date(year, month, 0).getDate();
-    const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-    const shiftHours = { morning: 4, noon: 5, night: 4 };
-
-    let stats = {};
-    employees.forEach(emp => { 
-        stats[emp] = { hours: 0, shiftsCount: 0, daysCount: 0, weekdayOffs: 0 }; 
-    });
-
-    let monthlySchedule = [];
-
-    for (let d = 1; d <= totalDays; d++) {
-        let dateObj = new Date(year, month - 1, d);
-        let dayOfWeek = dateObj.getDay();
-
-        let mCount = parseInt(document.getElementById(`m_${d}`).value) || 0;
-        let nCount = parseInt(document.getElementById(`n_${d}`).value) || 0;
-        let eCount = parseInt(document.getElementById(`e_${d}`).value) || 0;
-        let oCount = parseInt(document.getElementById(`o_${d}`).value) || 0;
-
-        if (mCount === 0 && nCount === 0 && eCount === 0) {
-            monthlySchedule.push({
-                date: d, dayName: dayNames[dayOfWeek], dayOfWeek: dayOfWeek, isOffDay: true,
-                morning: '-', noon: '-', night: '-', off: employees.join(', '), dailyHoursStr: '-'
-            });
-        } else {
-            let eligibleForOff = employees.filter(emp => stats[emp].weekdayOffs < 4);
-
-            eligibleForOff.sort((a, b) => 
-                (stats[a].weekdayOffs - stats[b].weekdayOffs) ||
-                (stats[b].hours - stats[a].hours) ||
-                (Math.random() - 0.5)
-            );
-
-            let actualOffCount = Math.min(oCount, eligibleForOff.length);
-            let todayOffSet = new Set(eligibleForOff.slice(0, actualOffCount));
-            let availableWorkers = employees.filter(emp => !todayOffSet.has(emp));
-
-            let assigned = { morning: [], noon: [], night: [] };
-            let todayWorkingSet = new Set();
-            let todayWorkerHours = {}; // 記錄當天個別員工工時
-
-            const shiftsToAssign = [
-                { key: 'morning', count: mCount, hours: shiftHours.morning },
-                { key: 'noon', count: nCount, hours: shiftHours.noon },
-                { key: 'night', count: eCount, hours: shiftHours.night }
-            ];
-
-            shiftsToAssign.forEach(shift => {
-                let available = availableWorkers.filter(emp => 
-                    (stats[emp].hours + shift.hours <= 160) && 
-                    !assigned[shift.key].includes(emp)
-                );
-
-                available.sort((a, b) => (stats[a].hours - stats[b].hours) || (Math.random() - 0.5));
-
-                let selected = available.slice(0, shift.count);
-                assigned[shift.key] = selected;
-
-                selected.forEach(emp => {
-                    stats[emp].hours += shift.hours;
-                    stats[emp].shiftsCount++;
-                    todayWorkingSet.add(emp);
-
-                    // 採計當天個人工時
-                    todayWorkerHours[emp] = (todayWorkerHours[emp] || 0) + shift.hours;
-                });
-            });
-
-            todayWorkingSet.forEach(emp => stats[emp].daysCount++);
-            let offEmps = employees.filter(e => !todayWorkingSet.has(e));
-            offEmps.forEach(emp => stats[emp].weekdayOffs++);
-
-            // 格式化當日個人工時字串 (例：哲嘉(8h), 敏琪(4h))
-            let dailyHoursArr = [];
-            for (let emp in todayWorkerHours) {
-                dailyHoursArr.push(`${emp}(${todayWorkerHours[emp]}h)`);
-            }
-            let dailyHoursStr = dailyHoursArr.length > 0 ? dailyHoursArr.join(', ') : '-';
-
-            monthlySchedule.push({
-                date: d,
-                dayName: dayNames[dayOfWeek],
-                dayOfWeek: dayOfWeek,
-                isOffDay: false,
-                morning: assigned.morning.length > 0 ? assigned.morning.join(', ') : '-',
-                noon: assigned.noon.length > 0 ? assigned.noon.join(', ') : '-',
-                night: assigned.night.length > 0 ? assigned.night.join(', ') : '-',
-                off: offEmps.length > 0 ? offEmps.join(', ') : '無休',
-                dailyHoursStr: dailyHoursStr
-            });
-        }
-    }
-
-    renderMonthlyTable(monthVal, monthlySchedule, stats, employees);
-}
-
-function renderMonthlyTable(monthVal, schedule, stats, employees) {
-    let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-        <h2>${monthVal} 月度班表總覽</h2>
-        <div>
-            <button class="btn-sec" onclick="toggleResultWeeks(true)">全展開當月</button>
-            <button class="btn-sec" onclick="toggleResultWeeks(false)">全隱藏當月</button>
+            <div class="p-5 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+                <h2 id="detail-title" class="text-xl font-bold text-amber-900">標題</h2>
+                <div id="detail-image-container" class="hidden rounded-xl overflow-hidden border border-amber-100 max-h-80">
+                    <img id="detail-image" class="w-full h-full object-cover">
+                </div>
+                <p id="detail-content" class="text-xs text-amber-800 leading-relaxed whitespace-pre-wrap border-b border-amber-100 pb-4"></p>
+                <div class="space-y-3">
+                    <h4 class="font-bold text-amber-900 text-xs flex items-center gap-1.5"><i class="fa-regular fa-comments text-amber-500"></i> 留言討論 (<span id="detail-comment-count">0</span>)</h4>
+                    <div class="flex gap-2">
+                        <input type="text" id="detail-comment-input" placeholder="撰寫留言..." class="flex-1 bg-amber-50/60 border border-amber-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                        <button onclick="addCommentFromDetail()" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-xl text-xs font-medium">送出</button>
+                    </div>
+                    <div id="detail-comments-list" class="space-y-2 pt-1"></div>
+                </div>
+            </div>
         </div>
-    </div>`;
+    </div>
 
-    let weeks = [];
-    let currentWeek = [];
-
-    schedule.forEach((dayData, index) => {
-        if (dayData.dayOfWeek === 0 && currentWeek.length > 0) {
-            weeks.push(currentWeek);
-            currentWeek = [];
-        }
-        currentWeek.push(dayData);
-        if (index === schedule.length - 1) {
-            weeks.push(currentWeek);
-        }
-    });
-
-    weeks.forEach((weekData, wIndex) => {
-        let weekNum = wIndex + 1;
-        let startDate = weekData[0].date;
-        let endDate = weekData[weekData.length - 1].date;
-
-        html += `<div class="week-card">
-            <div class="week-header result-header">
-                <span>第 ${weekNum} 週 (${monthVal.split('-')[1]}/${startDate} 日 ~ ${monthVal.split('-')[1]}/${endDate} 日)</span>
-                <button class="btn-toggle-week" onclick="toggleBlock('result_week_${weekNum}', this)">隱藏當週</button>
+    <!-- Modal: Album Upload -->
+    <div id="modal-album-upload" class="fixed inset-0 bg-amber-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-amber-100 overflow-hidden">
+            <div class="bg-amber-50 px-5 py-3.5 border-b border-amber-100 flex justify-between items-center">
+                <h3 class="font-bold text-amber-900 text-sm flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> 上傳照片至相簿</h3>
+                <button onclick="closeAlbumUploadModal()" class="text-amber-400 hover:text-amber-700"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <div class="table-wrapper" id="result_week_${weekNum}">
-                <table class="result-table">
-                    <tr>
-                        <th style="width: 6%;">日期</th>
-                        <th style="width: 6%;">星期</th>
-                        <th style="width: 20%;">早班 (08:00-12:00 / 4h)</th>
-                        <th style="width: 20%;">中班 (12:00-17:00 / 5h)</th>
-                        <th style="width: 20%;">晚班 (17:00-21:00 / 4h)</th>
-                        <th style="width: 12%;">全日排休人員</th>
-                        <th style="width: 16%;">當日個人工作時數</th>
-                    </tr>`;
+            <form onsubmit="handleSaveAlbumPhotos(event)" class="p-5 space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-amber-800 mb-1">照片標題</label>
+                    <input type="text" id="album-title-input" placeholder="例如：花海步道" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-amber-800 mb-1">拍攝/紀錄日期</label>
+                    <input type="date" id="album-date-input" required class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-amber-800 mb-1">選擇照片 (支援多選)</label>
+                    <input type="file" id="album-files-input" accept="image/*" multiple required class="w-full text-xs text-amber-700 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeAlbumUploadModal()" class="px-3.5 py-1.5 rounded-xl text-xs text-amber-700 bg-amber-100 hover:bg-amber-200">取消</button>
+                    <button type="submit" class="px-4 py-1.5 rounded-xl text-xs text-white bg-amber-500 hover:bg-amber-600 font-medium shadow">開始上傳</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        weekData.forEach(s => {
-            if (s.isOffDay) {
-                html += `<tr class="sunday">
-                    <td>${s.date} 日</td>
-                    <td>週${s.dayName}</td>
-                    <td colspan="5">全店公休 / 無排班</td>
-                </tr>`;
+    <!-- Lightbox Modal -->
+    <div id="modal-lightbox" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4" onclick="closeLightbox()">
+        <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onclick="event.stopPropagation()">
+            <img id="lightbox-img" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl object-contain">
+            <div class="text-white text-center mt-3 flex items-center gap-4">
+                <div>
+                    <p id="lightbox-title" class="font-medium text-sm"></p>
+                    <p id="lightbox-date" class="text-xs text-gray-300"></p>
+                </div>
+                <button id="lightbox-delete-btn" class="bg-red-500/80 hover:bg-red-600 text-white text-xs px-2.5 py-1 rounded-lg"><i class="fa-regular fa-trash-can mr-1"></i>刪除</button>
+            </div>
+            <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white text-xl hover:text-gray-300"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+
+    <!-- Core App Logic -->
+    <script>
+        let cards = [];
+        let albumPhotos = [];
+        let currentTab = 'cards';
+        let activeCardId = null;
+        let cardImageData = null;
+
+        // --- Init Function ---
+        window.addEventListener('load', () => {
+            if (!window.isFirebaseConfigured) {
+                document.getElementById('config-warning').classList.remove('hidden');
+                loadFromLocalStorage();
             } else {
-                html += `<tr>
-                    <td><strong>${s.date} 日</strong></td>
-                    <td>週${s.dayName}</td>
-                    <td>${s.morning}</td>
-                    <td>${s.noon}</td>
-                    <td>${s.night}</td>
-                    <td class="off">${s.off}</td>
-                    <td class="work-hours-cell">${s.dailyHoursStr}</td>
-                </tr>`;
+                setupFirebaseListeners();
             }
+
+            document.getElementById('album-date-input').value = new Date().toISOString().split('T')[0];
+            document.getElementById('card-date').value = new Date().toISOString().split('T')[0];
+            render();
         });
 
-        html += `</table></div></div>`;
-    });
+        // --- LocalStorage Fallback ---
+        function loadFromLocalStorage() {
+            cards = JSON.parse(localStorage.getItem('warm_cards') || '[]');
+            albumPhotos = JSON.parse(localStorage.getItem('warm_album') || '[]');
+            render();
+        }
 
-    html += `<h3>【個人工時與休假統計】(上限 160 小時 / 平日上限 4 天休假)</h3>`;
-    html += `<div class="summary-grid">`;
-    
-    employees.forEach(emp => {
-        let h = stats[emp].hours;
-        let isPassHours = h <= 160;
-        let offDays = stats[emp].weekdayOffs;
-        let isPassOff = offDays <= 4;
-        
-        html += `<div class="summary-card">
-            <strong>${emp}</strong><br>
-            總工時：<span class="${isPassHours ? 'pass' : 'warn'}">${h} 小時</span><br>
-            總班次：${stats[emp].shiftsCount} 次<br>
-            平日全休：<span class="${isPassOff ? 'pass' : 'warn'}">${offDays} 天</span>
-        </div>`;
-    });
-    
-    html += `</div>`;
+        function saveToLocalStorage() {
+            localStorage.setItem('warm_cards', JSON.stringify(cards));
+            localStorage.setItem('warm_album', JSON.stringify(albumPhotos));
+            render();
+        }
 
-    document.getElementById('result').innerHTML = html;
-}
+        // --- Firebase Cloud Sync ---
+        function setupFirebaseListeners() {
+            const { collection, onSnapshot, query, orderBy } = window.firebaseCollections;
+            
+            // Listen Cards Collection
+            onSnapshot(collection(window.db, "cards"), (snapshot) => {
+                cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                render();
+            });
 
-function toggleBlock(blockId, btn) {
-    const block = document.getElementById(blockId);
-    if (block.style.display === "none") {
-        block.style.display = "block";
-        btn.innerText = "隱藏當週";
-    } else {
-        block.style.display = "none";
-        btn.innerText = "展開當週";
-    }
-}
+            // Listen Album Collection
+            onSnapshot(collection(window.db, "album"), (snapshot) => {
+                albumPhotos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                render();
+            });
+        }
 
-function toggleInputWeeks(showAll) {
-    const blocks = document.querySelectorAll('[id^="input_week_"]');
-    blocks.forEach(b => {
-        b.style.display = showAll ? "block" : "none";
-        const btn = b.previousElementSibling.querySelector('button');
-        if (btn) btn.innerText = showAll ? "隱藏當週" : "展開當週";
-    });
-}
+        // --- Render Views ---
+        function render() {
+            const filterDate = document.getElementById('filter-date').value;
+            if (currentTab === 'cards') renderCards(filterDate);
+            else renderAlbum(filterDate);
+        }
 
-function toggleResultWeeks(showAll) {
-    const blocks = document.querySelectorAll('[id^="result_week_"]');
-    blocks.forEach(b => {
-        b.style.display = showAll ? "block" : "none";
-        const btn = b.previousElementSibling.querySelector('button');
-        if (btn) btn.innerText = showAll ? "隱藏當週" : "展開當週";
-    });
-}
+        function renderCards(filterDate = '') {
+            const grid = document.getElementById('cards-grid');
+            const empty = document.getElementById('cards-empty');
+            grid.innerHTML = '';
 
-window.onload = renderDailyInputTable;
-</script>
+            let filtered = [...cards].sort((a,b) => new Date(b.date) - new Date(a.date));
+            if (filterDate) filtered = filtered.filter(c => c.date === filterDate);
 
+            if (filtered.length === 0) {
+                empty.classList.remove('hidden'); empty.classList.add('flex');
+            } else {
+                empty.classList.add('hidden'); empty.classList.remove('flex');
+                filtered.forEach(card => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-white rounded-2xl border border-amber-100 shadow-sm hover:shadow-md transition duration-300 flex flex-col overflow-hidden group';
+                    el.innerHTML = `
+                        ${card.image ? `<div class="h-36 w-full overflow-hidden cursor-pointer" onclick="openDetailModal('${card.id}')"><img src="${card.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500"></div>` : ''}
+                        <div class="p-4 flex-1 flex flex-col justify-between cursor-pointer" onclick="openDetailModal('${card.id}')">
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800">${escapeHtml(card.topic)}</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] text-amber-500"><i class="fa-regular fa-calendar mr-1"></i>${card.date}</span>
+                                        <button onclick="event.stopPropagation(); openEditModal('${card.id}')" title="編輯" class="text-amber-400 hover:text-amber-700 p-0.5"><i class="fa-regular fa-pen-to-square"></i></button>
+                                        <button onclick="event.stopPropagation(); deleteCard('${card.id}')" title="刪除" class="text-amber-300 hover:text-red-500 p-0.5"><i class="fa-regular fa-trash-can"></i></button>
+                                    </div>
+                                </div>
+                                <h3 class="text-base font-bold text-amber-900 mb-1 hover:text-amber-600 transition">${escapeHtml(card.title)}</h3>
+                                <p class="text-xs text-amber-800/80 leading-relaxed line-clamp-3-custom mb-2 whitespace-pre-wrap">${escapeHtml(card.content)}</p>
+                            </div>
+                            <div class="text-[10px] text-amber-500 font-medium text-right pt-2 border-t border-amber-50">詳情與留言 →</div>
+                        </div>
+                        <div class="bg-amber-50/50 px-4 py-2 border-t border-amber-100/60 flex items-center justify-between text-xs text-amber-700">
+                            <span class="text-[10px]"><i class="fa-regular fa-comment mr-1"></i>${(card.comments || []).length} 條留言</span>
+                            <div class="flex gap-1" onclick="event.stopPropagation()">
+                                <input type="text" id="input-quick-comment-${card.id}" placeholder="留言..." class="w-24 bg-white border border-amber-200 rounded px-1.5 py-0.5 text-[10px]">
+                                <button onclick="addQuickComment('${card.id}')" class="bg-amber-500 text-white px-2 py-0.5 rounded text-[10px]">送出</button>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(el);
+                });
+            }
+        }
+
+        function renderAlbum(filterDate = '') {
+            const grid = document.getElementById('album-grid');
+            const empty = document.getElementById('album-empty');
+            grid.innerHTML = '';
+
+            let filtered = [...albumPhotos].sort((a,b) => new Date(b.date) - new Date(a.date));
+            if (filterDate) filtered = filtered.filter(p => p.date === filterDate);
+
+            if (filtered.length === 0) {
+                empty.classList.remove('hidden'); empty.classList.add('flex');
+            } else {
+                empty.classList.add('hidden'); empty.classList.remove('flex');
+                filtered.forEach(photo => {
+                    const el = document.createElement('div');
+                    el.className = 'group relative aspect-square bg-amber-100 rounded-xl overflow-hidden shadow-sm cursor-pointer border border-amber-100';
+                    el.onclick = () => openLightbox(photo);
+                    el.innerHTML = `
+                        <img src="${photo.url}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition p-2 flex flex-col justify-end text-white">
+                            <p class="text-xs font-medium truncate">${escapeHtml(photo.title || '未命名照片')}</p>
+                            <p class="text-[10px] text-gray-300">${photo.date}</p>
+                        </div>
+                    `;
+                    grid.appendChild(el);
+                });
+            }
+        }
+
+        // --- Card Actions ---
+        async function handleSaveCard(e) {
+            e.preventDefault();
+            const editId = document.getElementById('card-edit-id').value;
+            const topic = document.getElementById('card-topic').value.trim();
+            const title = document.getElementById('card-title').value.trim();
+            const date = document.getElementById('card-date').value;
+            const content = document.getElementById('card-content').value.trim();
+
+            const cardData = {
+                topic, title, date, content,
+                image: cardImageData || null,
+                updatedAt: new Date().toISOString()
+            };
+
+            if (window.isFirebaseConfigured) {
+                const { collection, addDoc, doc, updateDoc } = window.firebaseCollections;
+                if (editId) {
+                    await updateDoc(doc(window.db, "cards", editId), cardData);
+                } else {
+                    cardData.comments = [];
+                    await addDoc(collection(window.db, "cards"), cardData);
+                }
+            } else {
+                if (editId) {
+                    const idx = cards.findIndex(c => c.id === editId);
+                    if (idx !== -1) cards[idx] = { ...cards[idx], ...cardData };
+                } else {
+                    cards.unshift({ id: Date.now().toString(), comments: [], ...cardData });
+                }
+                saveToLocalStorage();
+            }
+
+            closeCardModal();
+        }
+
+        async function deleteCard(cardId) {
+            if (!confirm('確定要刪除這張卡片嗎？')) return;
+            if (window.isFirebaseConfigured) {
+                const { doc, deleteDoc } = window.firebaseCollections;
+                await deleteDoc(doc(window.db, "cards", cardId));
+            } else {
+                cards = cards.filter(c => c.id !== cardId);
+                saveToLocalStorage();
+            }
+            closeDetailModal();
+        }
+
+        async function addQuickComment(cardId) {
+            const input = document.getElementById(`input-quick-comment-${cardId}`);
+            const text = input.value.trim();
+            if (!text) return;
+
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const newComment = { id: Date.now().toString(), text, time: timeStr };
+
+            if (window.isFirebaseConfigured) {
+                const { doc, updateDoc } = window.firebaseCollections;
+                const card = cards.find(c => c.id === cardId);
+                const updatedComments = [...(card.comments || []), newComment];
+                await updateDoc(doc(window.db, "cards", cardId), { comments: updatedComments });
+            } else {
+                const card = cards.find(c => c.id === cardId);
+                if (card) {
+                    card.comments = card.comments || [];
+                    card.comments.push(newComment);
+                    saveToLocalStorage();
+                }
+            }
+        }
+
+        // --- Image Helpers ---
+        function previewCardImage(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                cardImageData = evt.target.result;
+                document.getElementById('card-image-preview').src = cardImageData;
+                document.getElementById('card-image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeCardImage() {
+            cardImageData = null;
+            document.getElementById('card-image-input').value = '';
+            document.getElementById('card-image-preview-container').classList.add('hidden');
+        }
+
+        // --- Modals Control ---
+        function openCreateModal() {
+            if (currentTab === 'album') return openAlbumUploadModal();
+            document.getElementById('card-modal-title').innerHTML = '<i class="fa-solid fa-pen-to-square text-amber-500"></i> 新增卡片';
+            document.getElementById('card-edit-id').value = '';
+            document.getElementById('card-form').reset();
+            removeCardImage();
+            document.getElementById('card-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('modal-card').classList.remove('hidden');
+        }
+
+        function openEditModal(cardId) {
+            const card = cards.find(c => c.id === cardId);
+            if (!card) return;
+            document.getElementById('card-modal-title').innerHTML = '<i class="fa-solid fa-pen-to-square text-amber-500"></i> 編輯卡片';
+            document.getElementById('card-edit-id').value = card.id;
+            document.getElementById('card-topic').value = card.topic;
+            document.getElementById('card-title').value = card.title;
+            document.getElementById('card-date').value = card.date;
+            document.getElementById('card-content').value = card.content;
+
+            if (card.image) {
+                cardImageData = card.image;
+                document.getElementById('card-image-preview').src = card.image;
+                document.getElementById('card-image-preview-container').classList.remove('hidden');
+            } else {
+                removeCardImage();
+            }
+
+            document.getElementById('modal-card').classList.remove('hidden');
+        }
+
+        function closeCardModal() { document.getElementById('modal-card').classList.add('hidden'); }
+
+        function openDetailModal(cardId) {
+            const card = cards.find(c => c.id === cardId);
+            if (!card) return;
+            activeCardId = cardId;
+            document.getElementById('detail-topic').innerText = card.topic;
+            document.getElementById('detail-date').innerText = card.date;
+            document.getElementById('detail-title').innerText = card.title;
+            document.getElementById('detail-content').innerText = card.content;
+
+            if (card.image) {
+                document.getElementById('detail-image').src = card.image;
+                document.getElementById('detail-image-container').classList.remove('hidden');
+            } else {
+                document.getElementById('detail-image-container').classList.add('hidden');
+            }
+
+            document.getElementById('detail-edit-btn').onclick = () => { closeDetailModal(); openEditModal(cardId); };
+            document.getElementById('detail-delete-btn').onclick = () => deleteCard(cardId);
+
+            renderDetailComments();
+            document.getElementById('modal-detail').classList.remove('hidden');
+        }
+
+        function closeDetailModal() { document.getElementById('modal-detail').classList.add('hidden'); activeCardId = null; }
+
+        function renderDetailComments() {
+            if (!activeCardId) return;
+            const card = cards.find(c => c.id === activeCardId);
+            if (!card) return;
+
+            const comments = card.comments || [];
+            document.getElementById('detail-comment-count').innerText = comments.length;
+            const list = document.getElementById('detail-comments-list');
+            list.innerHTML = comments.length === 0 ? '<p class="text-xs text-amber-500 italic py-1">尚無留言</p>' : '';
+
+            comments.forEach(c => {
+                const el = document.createElement('div');
+                el.className = 'bg-amber-50/70 p-2.5 rounded-xl border border-amber-100 text-xs flex justify-between gap-2';
+                el.innerHTML = `<p class="text-amber-800 leading-relaxed">${escapeHtml(c.text)}</p><span class="text-[10px] text-amber-400 whitespace-nowrap">${c.time}</span>`;
+                list.appendChild(el);
+            });
+        }
+
+        async function addCommentFromDetail() {
+            if (!activeCardId) return;
+            const input = document.getElementById('detail-comment-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const newComment = { id: Date.now().toString(), text, time: timeStr };
+
+            if (window.isFirebaseConfigured) {
+                const { doc, updateDoc } = window.firebaseCollections;
+                const card = cards.find(c => c.id === activeCardId);
+                const updatedComments = [...(card.comments || []), newComment];
+                await updateDoc(doc(window.db, "cards", activeCardId), { comments: updatedComments });
+            } else {
+                const card = cards.find(c => c.id === activeCardId);
+                card.comments = card.comments || [];
+                card.comments.push(newComment);
+                saveToLocalStorage();
+            }
+            input.value = '';
+            renderDetailComments();
+        }
+
+        // --- Album Logic ---
+        function openAlbumUploadModal() { document.getElementById('modal-album-upload').classList.remove('hidden'); }
+        function closeAlbumUploadModal() { document.getElementById('modal-album-upload').classList.add('hidden'); }
+
+        async function handleSaveAlbumPhotos(e) {
+            e.preventDefault();
+            const title = document.getElementById('album-title-input').value.trim();
+            const date = document.getElementById('album-date-input').value;
+            const files = document.getElementById('album-files-input').files;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const base64 = await fileToBase64(file);
+                const photoData = { title, date, url: base64, createdAt: new Date().toISOString() };
+
+                if (window.isFirebaseConfigured) {
+                    const { collection, addDoc } = window.firebaseCollections;
+                    await addDoc(collection(window.db, "album"), photoData);
+                } else {
+                    albumPhotos.unshift({ id: Date.now().toString() + i, ...photoData });
+                }
+            }
+
+            if (!window.isFirebaseConfigured) saveToLocalStorage();
+            closeAlbumUploadModal();
+        }
+
+        function openLightbox(photo) {
+            document.getElementById('lightbox-img').src = photo.url;
+            document.getElementById('lightbox-title').innerText = photo.title || '未命名照片';
+            document.getElementById('lightbox-date').innerText = photo.date;
+            document.getElementById('lightbox-delete-btn').onclick = () => deleteAlbumPhoto(photo.id);
+            document.getElementById('modal-lightbox').classList.remove('hidden');
+        }
+
+        function closeLightbox() { document.getElementById('modal-lightbox').classList.add('hidden'); }
+
+        async function deleteAlbumPhoto(id) {
+            if (!confirm('確定要刪除這張照片嗎？')) return;
+            if (window.isFirebaseConfigured) {
+                const { doc, deleteDoc } = window.firebaseCollections;
+                await deleteDoc(doc(window.db, "album", id));
+            } else {
+                albumPhotos = albumPhotos.filter(p => p.id !== id);
+                saveToLocalStorage();
+            }
+            closeLightbox();
+        }
+
+        // --- Tabs Control ---
+        function switchTab(tab) {
+            currentTab = tab;
+            const cardsBtn = document.getElementById('tab-cards-btn');
+            const albumBtn = document.getElementById('tab-album-btn');
+            const addBtnText = document.getElementById('add-btn-text');
+
+            if (tab === 'cards') {
+                document.getElementById('cards-view').classList.remove('hidden');
+                document.getElementById('album-view').classList.add('hidden');
+                cardsBtn.className = 'px-4 py-1.5 rounded-lg text-sm font-medium transition bg-white text-amber-900 shadow-sm';
+                albumBtn.className = 'px-4 py-1.5 rounded-lg text-sm font-medium transition text-amber-700 hover:text-amber-900';
+                addBtnText.innerText = '新增卡片';
+            } else {
+                document.getElementById('cards-view').classList.add('hidden');
+                document.getElementById('album-view').classList.remove('hidden');
+                albumBtn.className = 'px-4 py-1.5 rounded-lg text-sm font-medium transition bg-white text-amber-900 shadow-sm';
+                cardsBtn.className = 'px-4 py-1.5 rounded-lg text-sm font-medium transition text-amber-700 hover:text-amber-900';
+                addBtnText.innerText = '上傳照片';
+            }
+            render();
+        }
+
+        // --- Filter Logic ---
+        document.getElementById('filter-date').addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val) {
+                document.getElementById('filter-info').classList.remove('hidden');
+                document.getElementById('clear-filter').classList.remove('hidden');
+                document.getElementById('filter-date-display').innerText = val;
+            } else {
+                resetFilter();
+            }
+            render();
+        });
+
+        function resetFilter() {
+            document.getElementById('filter-date').value = '';
+            document.getElementById('filter-info').classList.add('hidden');
+            document.getElementById('clear-filter').classList.add('hidden');
+            render();
+        }
+        document.getElementById('clear-filter').addEventListener('click', resetFilter);
+
+        // --- Utility ---
+        function fileToBase64(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
 </body>
 </html>
