@@ -1,510 +1,664 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>逐日自訂班別與排休系統 (含當日個人工時顯示)</title>
+    <title>給妳的浪漫星空膠捲</title>
+    <!-- 引入 Google Fonts 中文字型與圖示 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        :root {
+            --bg-deep: #050b14;
+            --bg-night: #0a1628;
+            --gold-primary: #f0c674;
+            --gold-light: #fffaed;
+            --gold-glow: rgba(240, 198, 116, 0.4);
+            --text-main: #f4f4f4;
+            --text-muted: #b0bac9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Noto Serif TC', serif;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .container {
-            max-width: 1250px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+        /* 星空與燭光背景 Canvas */
+        #sky-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
         }
-        h1, h2, h3 { color: #333; }
-        .control-panel {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            border: 1px solid #e9ecef;
-        }
-        .form-row {
+
+        /* 頂部裝飾列 (音樂與自訂按鈕) */
+        .top-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
             display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
+            gap: 12px;
         }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        input[type="text"], input[type="month"] {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .num-input {
-            width: 50px;
-            padding: 4px;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 9px 18px;
-            border: none;
-            border-radius: 4px;
+
+        .control-btn {
+            background: rgba(10, 22, 40, 0.8);
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-primary);
+            padding: 8px 16px;
+            border-radius: 30px;
             cursor: pointer;
-            font-size: 15px;
-            font-weight: bold;
-        }
-        button:hover { background-color: #0056b3; }
-        .btn-sec {
-            background-color: #6c757d;
-            padding: 6px 12px;
-            font-size: 13px;
-        }
-        .btn-sec:hover { background-color: #5a6268; }
-        
-        /* 週區塊與表格卡片樣式 */
-        .week-card {
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            background: #fff;
-            overflow: hidden;
-        }
-        .week-header {
-            background-color: #495057;
-            color: #fff;
-            padding: 8px 15px;
+            font-family: 'Noto Serif TC', serif;
+            font-size: 14px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            font-weight: bold;
+            gap: 6px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .control-btn:hover {
+            background: var(--gold-primary);
+            color: var(--bg-deep);
+            box-shadow: 0 0 15px var(--gold-glow);
+        }
+
+        /* 初始告白彈窗層 */
+        #welcome-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 11, 20, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease, visibility 1s ease;
+        }
+
+        #welcome-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, rgba(15, 28, 48, 0.95), rgba(8, 16, 30, 0.98));
+            border: 1px solid var(--gold-primary);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 0 40px rgba(240, 198, 116, 0.2);
+            animation: cardFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes cardFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .welcome-card h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            color: var(--gold-primary);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .welcome-card p {
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+            min-height: 50px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            font-family: 'Noto Serif TC', serif;
+            transition: all 0.3s ease;
+            border: none;
+            outline: none;
+        }
+
+        .btn-yes {
+            background: linear-gradient(135deg, #f0c674, #d4af37);
+            color: var(--bg-deep);
+            font-weight: 600;
+            box-shadow: 0 0 15px rgba(240, 198, 116, 0.4);
+        }
+
+        .btn-yes:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(240, 198, 116, 0.8);
+        }
+
+        .btn-no {
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        /* 電影膠捲放映區 */
+        #reel-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 100px 20px 200px 20px;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        #reel-container.active {
+            opacity: 1;
+        }
+
+        .reel-item {
+            background: rgba(10, 22, 40, 0.7);
+            border: 1px solid rgba(240, 198, 116, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 120px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            /* 預設透明度為 0，透過 JS 捲動動態調整 */
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .reel-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reel-img-wrap {
+            width: 100%;
+            height: 380px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid rgba(240, 198, 116, 0.2);
+            background: #000;
+        }
+
+        .reel-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .reel-item:hover .reel-img-wrap img {
+            transform: scale(1.03);
+        }
+
+        .reel-text h3 {
+            color: var(--gold-primary);
+            font-size: 22px;
+            margin-bottom: 10px;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .reel-text p {
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        /* 底部自動放映控制列 */
+        #player-bar {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(10, 22, 40, 0.9);
+            border: 1px solid var(--gold-primary);
+            padding: 12px 25px;
+            border-radius: 40px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.7);
+            transition: transform 0.5s ease;
+        }
+
+        #player-bar.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .player-btn {
+            background: none;
+            border: none;
+            color: var(--gold-primary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .player-btn:hover {
+            color: var(--gold-light);
+        }
+
+        .speed-badge {
+            font-size: 13px;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.05);
+            padding: 4px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* 自訂內容編輯面板 */
+        #custom-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            height: 100%;
+            background: rgba(8, 16, 30, 0.98);
+            border-left: 1px solid var(--gold-primary);
+            z-index: 200;
+            padding: 30px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+            transition: right 0.4s ease;
+            overflow-y: auto;
+        }
+
+        #custom-panel.open {
+            right: 0;
+        }
+
+        #custom-panel h2 {
+            color: var(--gold-primary);
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(240, 198, 116, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            color: var(--text-main);
+            font-family: 'Noto Serif TC', serif;
             font-size: 14px;
         }
-        .result-header {
-            background-color: #343a40;
+
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
         }
-        .btn-toggle-week {
-            background-color: #17a2b8;
-            color: white;
-            padding: 4px 10px;
-            font-size: 12px;
-            border-radius: 3px;
+
+        .close-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
             border: none;
+            color: var(--text-muted);
+            font-size: 20px;
             cursor: pointer;
         }
-        .btn-toggle-week:hover { background-color: #138496; }
-
-        .daily-setting-table, table.result-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .daily-setting-table th, .daily-setting-table td,
-        table.result-table th, table.result-table td {
-            border: 1px solid #ddd;
-            padding: 6px;
-            text-align: center;
-        }
-        .daily-setting-table th, table.result-table th { background-color: #e9ecef; }
-        .sun-row { background-color: #f8d7da; }
-        .table-wrapper { overflow-x: auto; }
-        
-        .off { background-color: #ffe6e6; color: #d9534f; font-weight: bold; }
-        .sunday { background-color: #f8d7da; color: #721c24; font-weight: bold; }
-        .work-hours-cell { background-color: #f0f7ff; color: #0056b3; text-align: left !important; padding-left: 10px !important; }
-        
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .summary-card {
-            background: #e9ecef;
-            padding: 10px 15px;
-            border-radius: 6px;
-            text-align: center;
-        }
-        .pass { color: #28a745; font-weight: bold; }
-        .warn { color: #d9534f; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>08:00 - 21:00 逐日自訂班別與排休系統</h1>
-    
-    <div class="control-panel">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="monthPicker"><strong>1. 選擇月份：</strong></label>
-                <input type="month" id="monthPicker" onchange="renderDailyInputTable()">
+    <!-- 星空背景畫布 -->
+    <canvas id="sky-canvas"></canvas>
+
+    <!-- 頂部按鈕 -->
+    <div class="top-bar">
+        <button class="control-btn" id="music-toggle-btn"><i class="fa-solid fa-music"></i> 音樂：關</button>
+        <button class="control-btn" id="open-config-btn"><i class="fa-solid fa-pen-to-square"></i> 自訂內容</button>
+    </div>
+
+    <!-- 初始告白彈窗 -->
+    <div id="welcome-overlay">
+        <div class="welcome-card">
+            <h1>Our Starlight Story</h1>
+            <p>在滿天繁星與燭光見證下，這是一段屬於我們的浪漫回憶。妳願意和我一起看這場電影嗎？</p>
+            <div class="btn-group">
+                <button class="btn btn-yes" id="yes-btn">我願意</button>
+                <button class="btn btn-no" id="no-btn">不要</button>
             </div>
-            
-            <div class="form-group" style="flex-grow: 1;">
-                <label for="employeeInput"><strong>2. 員工姓名（預設 6 位）：</strong></label>
-                <input type="text" id="employeeInput" value="員工A, 員工B, 員工C, 員工D, 員工E, 員工F">
-            </div>
-        </div>
-
-        <hr style="border: 0; border-top: 1px solid #dee2e6; margin: 15px 0;">
-
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-            <h3>3. 逐日輸入各班別與休假人數：</h3>
-            <div>
-                <button class="btn-sec" onclick="toggleInputWeeks(true)">全展開設定</button>
-                <button class="btn-sec" onclick="toggleInputWeeks(false)">全隱藏設定</button>
-                <button class="btn-sec" onclick="applyDefaultValues()" style="background-color: #28a745;">一鍵帶入預設 (早3/中3/晚3/休1)</button>
-            </div>
-        </div>
-
-        <div id="inputWeeksContainer">
-            <!-- 動態產生按週分組的輸入表格 -->
-        </div>
-
-        <div style="text-align: right; margin-top: 15px;">
-            <button onclick="generateMonthlySchedule()">開始產生班表</button>
         </div>
     </div>
 
-    <div id="result"></div>
-</div>
+    <!-- 電影膠捲放映區 -->
+    <div id="reel-container">
+        <!-- 內容會由 JavaScript 動態帶入 -->
+    </div>
 
-<script>
-document.getElementById('monthPicker').value = new Date().toISOString().slice(0, 7);
+    <!-- 底部自動放映控制列 -->
+    <div id="player-bar">
+        <button class="player-btn" id="play-pause-btn" title="暫停/播放"><i class="fa-solid fa-pause"></i></button>
+        <span style="font-size:13px; color:var(--gold-primary);" id="player-status">自動放映中...</span>
+        <button class="speed-badge" id="speed-btn">速度: 1x</button>
+    </div>
 
-function renderDailyInputTable() {
-    const monthVal = document.getElementById('monthPicker').value;
-    if (!monthVal) return;
-
-    const [year, month] = monthVal.split('-').map(Number);
-    const totalDays = new Date(year, month, 0).getDate();
-    const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-
-    let container = document.getElementById('inputWeeksContainer');
-    container.innerHTML = '';
-
-    let weeks = [];
-    let currentWeek = [];
-
-    for (let d = 1; d <= totalDays; d++) {
-        let dateObj = new Date(year, month - 1, d);
-        let dayOfWeek = dateObj.getDay();
-
-        if (dayOfWeek === 0 && currentWeek.length > 0) {
-            weeks.push(currentWeek);
-            currentWeek = [];
-        }
-        currentWeek.push({ day: d, dayOfWeek: dayOfWeek });
-        if (d === totalDays) {
-            weeks.push(currentWeek);
-        }
-    }
-
-    weeks.forEach((weekData, wIndex) => {
-        let weekNum = wIndex + 1;
-        let startDate = weekData[0].day;
-        let endDate = weekData[weekData.length - 1].day;
-
-        let weekCard = document.createElement('div');
-        weekCard.className = 'week-card';
-
-        let html = `
-            <div class="week-header">
-                <span>第 ${weekNum} 週 (${month}月${startDate}日 ~ ${month}月${endDate}日)</span>
-                <button class="btn-toggle-week" onclick="toggleBlock('input_week_${weekNum}', this)">隱藏當週</button>
-            </div>
-            <div class="table-wrapper" id="input_week_${weekNum}">
-                <table class="daily-setting-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 8%;">日期</th>
-                            <th style="width: 8%;">星期</th>
-                            <th>早班 (08-12 / 4h)</th>
-                            <th>中班 (12-17 / 5h)</th>
-                            <th>晚班 (17-21 / 4h)</th>
-                            <th style="color:#d9534f;">休假人數</th>
-                            <th style="width: 20%;">說明</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-
-        weekData.forEach(item => {
-            let d = item.day;
-            let dayOfWeek = item.dayOfWeek;
-            let isSunday = dayOfWeek === 0;
-
-            html += `
-                <tr class="${isSunday ? 'sun-row' : ''}">
-                    <td><strong>${d} 日</strong></td>
-                    <td>週${dayNames[dayOfWeek]}</td>
-                    <td><input type="number" id="m_${d}" class="num-input" value="${isSunday ? 0 : 3}" min="0"></td>
-                    <td><input type="number" id="n_${d}" class="num-input" value="${isSunday ? 0 : 3}" min="0"></td>
-                    <td><input type="number" id="e_${d}" class="num-input" value="${isSunday ? 0 : 3}" min="0"></td>
-                    <td><input type="number" id="o_${d}" class="num-input" value="${isSunday ? 6 : 1}" min="0" style="color:#d9534f; font-weight:bold;"></td>
-                    <td style="color: #666; font-size: 12px;">${isSunday ? '週日預設全店公休' : '可隨時手動微調'}</td>
-                </tr>`;
-        });
-
-        html += `</tbody></table></div>`;
-        weekCard.innerHTML = html;
-        container.appendChild(weekCard);
-    });
-}
-
-function applyDefaultValues() {
-    const monthVal = document.getElementById('monthPicker').value;
-    const [year, month] = monthVal.split('-').map(Number);
-    const totalDays = new Date(year, month, 0).getDate();
-
-    for (let d = 1; d <= totalDays; d++) {
-        let dayOfWeek = new Date(year, month - 1, d).getDay();
-        if (dayOfWeek !== 0) {
-            document.getElementById(`m_${d}`).value = 3;
-            document.getElementById(`n_${d}`).value = 3;
-            document.getElementById(`e_${d}`).value = 3;
-            document.getElementById(`o_${d}`).value = 1;
-        }
-    }
-}
-
-function generateMonthlySchedule() {
-    const monthVal = document.getElementById('monthPicker').value;
-    if (!monthVal) { alert("請選擇月份！"); return; }
-
-    const inputVal = document.getElementById('employeeInput').value;
-    let employees = inputVal.split(/[,，\s]+/).filter(e => e.trim() !== '');
-
-    if (employees.length === 0) {
-        alert("請輸入員工姓名！");
-        return;
-    }
-
-    const [year, month] = monthVal.split('-').map(Number);
-    const totalDays = new Date(year, month, 0).getDate();
-    const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-    const shiftHours = { morning: 4, noon: 5, night: 4 };
-
-    let stats = {};
-    employees.forEach(emp => { 
-        stats[emp] = { hours: 0, shiftsCount: 0, daysCount: 0, weekdayOffs: 0 }; 
-    });
-
-    let monthlySchedule = [];
-
-    for (let d = 1; d <= totalDays; d++) {
-        let dateObj = new Date(year, month - 1, d);
-        let dayOfWeek = dateObj.getDay();
-
-        let mCount = parseInt(document.getElementById(`m_${d}`).value) || 0;
-        let nCount = parseInt(document.getElementById(`n_${d}`).value) || 0;
-        let eCount = parseInt(document.getElementById(`e_${d}`).value) || 0;
-        let oCount = parseInt(document.getElementById(`o_${d}`).value) || 0;
-
-        if (mCount === 0 && nCount === 0 && eCount === 0) {
-            monthlySchedule.push({
-                date: d, dayName: dayNames[dayOfWeek], dayOfWeek: dayOfWeek, isOffDay: true,
-                morning: '-', noon: '-', night: '-', off: employees.join(', '), dailyHoursStr: '-'
-            });
-        } else {
-            let eligibleForOff = employees.filter(emp => stats[emp].weekdayOffs < 4);
-
-            eligibleForOff.sort((a, b) => 
-                (stats[a].weekdayOffs - stats[b].weekdayOffs) ||
-                (stats[b].hours - stats[a].hours) ||
-                (Math.random() - 0.5)
-            );
-
-            let actualOffCount = Math.min(oCount, eligibleForOff.length);
-            let todayOffSet = new Set(eligibleForOff.slice(0, actualOffCount));
-            let availableWorkers = employees.filter(emp => !todayOffSet.has(emp));
-
-            let assigned = { morning: [], noon: [], night: [] };
-            let todayWorkingSet = new Set();
-            let todayWorkerHours = {}; // 記錄當天個別員工工時
-
-            const shiftsToAssign = [
-                { key: 'morning', count: mCount, hours: shiftHours.morning },
-                { key: 'noon', count: nCount, hours: shiftHours.noon },
-                { key: 'night', count: eCount, hours: shiftHours.night }
-            ];
-
-            shiftsToAssign.forEach(shift => {
-                let available = availableWorkers.filter(emp => 
-                    (stats[emp].hours + shift.hours <= 160) && 
-                    !assigned[shift.key].includes(emp)
-                );
-
-                available.sort((a, b) => (stats[a].hours - stats[b].hours) || (Math.random() - 0.5));
-
-                let selected = available.slice(0, shift.count);
-                assigned[shift.key] = selected;
-
-                selected.forEach(emp => {
-                    stats[emp].hours += shift.hours;
-                    stats[emp].shiftsCount++;
-                    todayWorkingSet.add(emp);
-
-                    // 採計當天個人工時
-                    todayWorkerHours[emp] = (todayWorkerHours[emp] || 0) + shift.hours;
-                });
-            });
-
-            todayWorkingSet.forEach(emp => stats[emp].daysCount++);
-            let offEmps = employees.filter(e => !todayWorkingSet.has(e));
-            offEmps.forEach(emp => stats[emp].weekdayOffs++);
-
-            // 格式化當日個人工時字串 (例：哲嘉(8h), 敏琪(4h))
-            let dailyHoursArr = [];
-            for (let emp in todayWorkerHours) {
-                dailyHoursArr.push(`${emp}(${todayWorkerHours[emp]}h)`);
-            }
-            let dailyHoursStr = dailyHoursArr.length > 0 ? dailyHoursArr.join(', ') : '-';
-
-            monthlySchedule.push({
-                date: d,
-                dayName: dayNames[dayOfWeek],
-                dayOfWeek: dayOfWeek,
-                isOffDay: false,
-                morning: assigned.morning.length > 0 ? assigned.morning.join(', ') : '-',
-                noon: assigned.noon.length > 0 ? assigned.noon.join(', ') : '-',
-                night: assigned.night.length > 0 ? assigned.night.join(', ') : '-',
-                off: offEmps.length > 0 ? offEmps.join(', ') : '無休',
-                dailyHoursStr: dailyHoursStr
-            });
-        }
-    }
-
-    renderMonthlyTable(monthVal, monthlySchedule, stats, employees);
-}
-
-function renderMonthlyTable(monthVal, schedule, stats, employees) {
-    let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-        <h2>${monthVal} 月度班表總覽</h2>
-        <div>
-            <button class="btn-sec" onclick="toggleResultWeeks(true)">全展開當月</button>
-            <button class="btn-sec" onclick="toggleResultWeeks(false)">全隱藏當月</button>
+    <!-- 自訂內容編輯側邊欄 -->
+    <div id="custom-panel">
+        <button class="close-panel" id="close-config-btn"><i class="fa-solid fa-xmark"></i></button>
+        <h2>編輯回憶與文字</h2>
+        <div id="form-items-container">
+            <!-- 動態生成表單 -->
         </div>
-    </div>`;
+        <button class="control-btn" id="save-config-btn" style="width:100%; justify-content:center; margin-top:15px;">儲存並更新</button>
+    </div>
 
-    let weeks = [];
-    let currentWeek = [];
+    <!-- 背景音樂 (可替換 src 網址) -->
+    <audio id="bg-music" loop>
+        <source src="https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3" type="audio/mpeg">
+    </audio>
 
-    schedule.forEach((dayData, index) => {
-        if (dayData.dayOfWeek === 0 && currentWeek.length > 0) {
-            weeks.push(currentWeek);
-            currentWeek = [];
+    <script>
+        // 預設照片與文字資料
+        let storyData = [
+            {
+                img: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=1000&q=80",
+                title: "初見的星光",
+                desc: "還記得那天的微風與星空，妳的笑容就像照亮我夜空的光芒，從此我的世界有了不同的意義。"
+            },
+            {
+                img: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1000&q=80",
+                title: "溫柔的陪伴",
+                desc: "無論是漫步在街頭還是安靜的午後，只要有妳在身邊，平淡的日常都變得閃閃發光。"
+            },
+            {
+                img: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=1000&q=80",
+                title: "手牽手走過的風景",
+                desc: "我們一起去過很多地方，拍下無數美麗的瞬間，每一張照片都是我們愛過的證明。"
+            },
+            {
+                img: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80",
+                title: "未來的無盡浪漫",
+                desc: "未來的日子還很長，願我們牽著彼此的手，走過每一個春夏秋冬，看遍所有的星辰大海。"
+            }
+        ];
+
+        // Canvas 星空與燭光背景動畫
+        const canvas = document.getElementById('sky-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
         }
-        currentWeek.push(dayData);
-        if (index === schedule.length - 1) {
-            weeks.push(currentWeek);
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const stars = [];
+        for (let i = 0; i < 150; i++) {
+            stars.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                radius: Math.random() * 1.5,
+                alpha: Math.random(),
+                speed: Math.random() * 0.01 + 0.005
+            });
         }
-    });
 
-    weeks.forEach((weekData, wIndex) => {
-        let weekNum = wIndex + 1;
-        let startDate = weekData[0].date;
-        let endDate = weekData[weekData.length - 1].date;
+        const candles = [];
+        for (let i = 0; i < 20; i++) {
+            candles.push({
+                x: Math.random() * width,
+                y: height + Math.random() * 200,
+                radius: Math.random() * 3 + 1,
+                speed: Math.random() * 0.8 + 0.4,
+                alpha: Math.random() * 0.6 + 0.2
+            });
+        }
 
-        html += `<div class="week-card">
-            <div class="week-header result-header">
-                <span>第 ${weekNum} 週 (${monthVal.split('-')[1]}/${startDate} 日 ~ ${monthVal.split('-')[1]}/${endDate} 日)</span>
-                <button class="btn-toggle-week" onclick="toggleBlock('result_week_${weekNum}', this)">隱藏當週</button>
-            </div>
-            <div class="table-wrapper" id="result_week_${weekNum}">
-                <table class="result-table">
-                    <tr>
-                        <th style="width: 6%;">日期</th>
-                        <th style="width: 6%;">星期</th>
-                        <th style="width: 20%;">早班 (08:00-12:00 / 4h)</th>
-                        <th style="width: 20%;">中班 (12:00-17:00 / 5h)</th>
-                        <th style="width: 20%;">晚班 (17:00-21:00 / 4h)</th>
-                        <th style="width: 12%;">全日排休人員</th>
-                        <th style="width: 16%;">當日個人工作時數</th>
-                    </tr>`;
+        function drawSky() {
+            ctx.clearRect(0, 0, width, height);
 
-        weekData.forEach(s => {
-            if (s.isOffDay) {
-                html += `<tr class="sunday">
-                    <td>${s.date} 日</td>
-                    <td>週${s.dayName}</td>
-                    <td colspan="5">全店公休 / 無排班</td>
-                </tr>`;
+            // 繪製背景漸層
+            let gradient = ctx.createRadialGradient(width/2, height/2, 50, width/2, height/2, Math.max(width, height));
+            gradient.addColorStop(0, '#0e1f38');
+            gradient.addColorStop(1, '#050b14');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // 繪製星星
+            stars.forEach(s => {
+                s.alpha += s.speed;
+                if (s.alpha > 1 || s.alpha < 0.2) s.speed = -s.speed;
+                ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 繪製燭光金色微粒
+            candles.forEach(c => {
+                c.y -= c.speed;
+                if (c.y < -10) {
+                    c.y = height + 10;
+                    c.x = Math.random() * width;
+                }
+                ctx.fillStyle = `rgba(240, 198, 116, ${c.alpha})`;
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            requestAnimationFrame(drawSky);
+        }
+        drawSky();
+
+        // 渲染膠捲卡片
+        const reelContainer = document.getElementById('reel-container');
+        function renderReel() {
+            reelContainer.innerHTML = '';
+            storyData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'reel-item';
+                div.innerHTML = `
+                    <div class="reel-img-wrap">
+                        <img src="${item.img}" alt="memory ${index+1}">
+                    </div>
+                    <div class="reel-text">
+                        <h3>${item.title}</h3>
+                        <p>${item.desc}</p>
+                    </div>
+                `;
+                reelContainer.appendChild(div);
+            });
+        }
+        renderReel();
+
+        // 互動邏輯：點擊「我願意」
+        const welcomeOverlay = document.getElementById('welcome-overlay');
+        const reelContainerElem = document.getElementById('reel-container');
+        const playerBar = document.getElementById('player-bar');
+        const bgMusic = document.getElementById('bg-music');
+        const musicToggleBtn = document.getElementById('music-toggle-btn');
+        const yesBtn = document.getElementById('yes-btn');
+        const noBtn = document.getElementById('no-btn');
+
+        let isPlayingAuto = false;
+        let scrollSpeed = 0.5; // 自動捲動速度
+        let animationFrameId = null;
+
+        yesBtn.addEventListener('click', () => {
+            welcomeOverlay.classList.add('hidden');
+            reelContainerElem.classList.add('active');
+            playerBar.classList.add('show');
+
+            // 播放音樂
+            bgMusic.play().then(() => {
+                musicToggleBtn.innerHTML = `<i class="fa-solid fa-music"></i> 音樂：開`;
+            }).catch(e => console.log("Audio play blocked"));
+
+            // 啟動自動捲動放映
+            isPlayingAuto = true;
+            startAutoScroll();
+        });
+
+        // 「不要」按鈕調皮逃跑
+        noBtn.addEventListener('mouseover', () => {
+            const x = (Math.random() - 0.5) * 150;
+            const y = (Math.random() - 0.5) * 80;
+            noBtn.style.transform = `translate(${x}px, ${y}px)`;
+        });
+
+        // 自動捲動放映引擎
+        function startAutoScroll() {
+            if (!isPlayingAuto) return;
+            window.scrollBy(0, scrollSpeed);
+
+            // 當捲動到底部時自動停止或循環
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 5) {
+                isPlayingAuto = false;
+                document.getElementById('play-pause-btn').innerHTML = `<i class="fa-solid fa-play"></i>`;
+                document.getElementById('player-status').innerText = '放映結束';
+                return;
+            }
+
+            // 檢查卡片可見度 (透明度動畫)
+            const items = document.querySelectorAll('.reel-item');
+            items.forEach(item => {
+                const rect = item.getBoundingClientRect();
+                if (rect.top < window.innerHeight * 0.8 && rect.bottom > 0) {
+                    item.classList.add('visible');
+                }
+            });
+
+            animationFrameId = requestAnimationFrame(startAutoScroll);
+        }
+
+        // 放映控制列按鈕
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playerStatus = document.getElementById('player-status');
+        playPauseBtn.addEventListener('click', () => {
+            isPlayingAuto = !isPlayingAuto;
+            if (isPlayingAuto) {
+                playPauseBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+                playerStatus.innerText = '自動放映中...';
+                startAutoScroll();
             } else {
-                html += `<tr>
-                    <td><strong>${s.date} 日</strong></td>
-                    <td>週${s.dayName}</td>
-                    <td>${s.morning}</td>
-                    <td>${s.noon}</td>
-                    <td>${s.night}</td>
-                    <td class="off">${s.off}</td>
-                    <td class="work-hours-cell">${s.dailyHoursStr}</td>
-                </tr>`;
+                playPauseBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+                playerStatus.innerText = '已暫停';
+                cancelAnimationFrame(animationFrameId);
             }
         });
 
-        html += `</table></div></div>`;
-    });
+        // 速度切換
+        const speeds = [0.5, 1, 2];
+        let speedIdx = 0;
+        const speedBtn = document.getElementById('speed-btn');
+        speedBtn.addEventListener('click', () => {
+            speedIdx = (speedIdx + 1) % speeds.length;
+            if (speedIdx === 0) scrollSpeed = 0.3;
+            if (speedIdx === 1) scrollSpeed = 0.6;
+            if (speedIdx === 2) scrollSpeed = 1.2;
+            speedBtn.innerText = `速度: ${['0.5x', '1x', '2x'][speedIdx]}`;
+        });
 
-    html += `<h3>【個人工時與休假統計】(上限 160 小時 / 平日上限 4 天休假)</h3>`;
-    html += `<div class="summary-grid">`;
-    
-    employees.forEach(emp => {
-        let h = stats[emp].hours;
-        let isPassHours = h <= 160;
-        let offDays = stats[emp].weekdayOffs;
-        let isPassOff = offDays <= 4;
-        
-        html += `<div class="summary-card">
-            <strong>${emp}</strong><br>
-            總工時：<span class="${isPassHours ? 'pass' : 'warn'}">${h} 小時</span><br>
-            總班次：${stats[emp].shiftsCount} 次<br>
-            平日全休：<span class="${isPassOff ? 'pass' : 'warn'}">${offDays} 天</span>
-        </div>`;
-    });
-    
-    html += `</div>`;
+        // 音樂切換開關
+        musicToggleBtn.addEventListener('click', () => {
+            if (bgMusic.paused) {
+                bgMusic.play();
+                musicToggleBtn.innerHTML = `<i class="fa-solid fa-music"></i> 音樂：開`;
+            } else {
+                bgMusic.pause();
+                musicToggleBtn.innerHTML = `<i class="fa-solid fa-music"></i> 音樂：關`;
+            }
+        });
 
-    document.getElementById('result').innerHTML = html;
-}
+        // 自訂內容側邊欄控制
+        const customPanel = document.getElementById('custom-panel');
+        document.getElementById('open-config-btn').addEventListener('click', () => {
+            customPanel.classList.add('open');
+            populateForm();
+        });
+        document.getElementById('close-config-btn').addEventListener('click', () => {
+            customPanel.classList.remove('open');
+        });
 
-function toggleBlock(blockId, btn) {
-    const block = document.getElementById(blockId);
-    if (block.style.display === "none") {
-        block.style.display = "block";
-        btn.innerText = "隱藏當週";
-    } else {
-        block.style.display = "none";
-        btn.innerText = "展開當週";
-    }
-}
+        const formItemsContainer = document.getElementById('form-items-container');
+        function populateForm() {
+            formItemsContainer.innerHTML = '';
+            storyData.forEach((item, index) => {
+                formItemsContainer.innerHTML += `
+                    <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 15px;">
+                        <h3 style="font-size:14px; color:var(--gold-primary); margin-bottom:8px;">卡片 #${index+1}</h3>
+                        <div class="form-group">
+                            <label>照片網址 (URL)</label>
+                            <input type="text" id="img-${index}" value="${item.img}">
+                        </div>
+                        <div class="form-group">
+                            <label>標題</label>
+                            <input type="text" id="title-${index}" value="${item.title}">
+                        </div>
+                        <div class="form-group">
+                            <label>內文描述</label>
+                            <textarea id="desc-${index}">${item.desc}</textarea>
+                        </div>
+                    </div>
+                `;
+            });
+        }
 
-function toggleInputWeeks(showAll) {
-    const blocks = document.querySelectorAll('[id^="input_week_"]');
-    blocks.forEach(b => {
-        b.style.display = showAll ? "block" : "none";
-        const btn = b.previousElementSibling.querySelector('button');
-        if (btn) btn.innerText = showAll ? "隱藏當週" : "展開當週";
-    });
-}
-
-function toggleResultWeeks(showAll) {
-    const blocks = document.querySelectorAll('[id^="result_week_"]');
-    blocks.forEach(b => {
-        b.style.display = showAll ? "block" : "none";
-        const btn = b.previousElementSibling.querySelector('button');
-        if (btn) btn.innerText = showAll ? "隱藏當週" : "展開當週";
-    });
-}
-
-window.onload = renderDailyInputTable;
-</script>
-
+        document.getElementById('save-config-btn').addEventListener('click', () => {
+            storyData.forEach((item, index) => {
+                item.img = document.getElementById(`img-${index}`).value;
+                item.title = document.getElementById(`title-${index}`).value;
+                item.desc = document.getElementById(`desc-${index}`).value;
+            });
+            renderReel();
+            customPanel.classList.remove('open');
+        });
+    </script>
 </body>
 </html>
