@@ -326,12 +326,6 @@
             resize: vertical;
         }
 
-        .file-input {
-            margin-top: 5px;
-            color: var(--text-muted);
-            font-size: 12px;
-        }
-
         .close-panel {
             position: absolute;
             top: 20px;
@@ -385,9 +379,10 @@
     </div>
 
     <div id="custom-panel">
-        <div id="loading-mask">上傳儲存中...</div>
+        <div id="loading-mask">同步雲端儲存中...</div>
         <button class="close-panel" id="close-config-btn"><i class="fa-solid fa-xmark"></i></button>
-        <h2>上傳與編輯告白內容</h2>
+        <h2>編輯告白內容與圖床連結</h2>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">提示：請先將照片上傳至 <a href="https://imgbb.com/" target="_blank" style="color: var(--gold-primary);">ImgBB</a>，並將「直接圖片連結」貼至下方欄位。</p>
         <div id="form-items-container"></div>
         <button class="control-btn" id="save-config-btn" style="width:100%; justify-content:center; margin-top:15px;">
             <i class="fa-solid fa-cloud-arrow-up"></i> 儲存並同步至雲端
@@ -398,12 +393,11 @@
         <source src="https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- 引入 Firebase v13 SDK 並整合您的憑證 -->
+    <!-- 引入 Firebase v13 SDK 與您的免費 Firestore 資料庫 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-analytics.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDfEnsCez2ywbt0NQ4jPBUUr8oAIcIwyA0",
@@ -419,7 +413,6 @@
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
 
         let storyData = [
             { img: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800", title: "初見的星光", desc: "還記得那天的微風與星空..." },
@@ -450,29 +443,22 @@
 
             try {
                 for (let i = 0; i < storyData.length; i++) {
+                    const imgVal = document.getElementById(`img-${i}`).value;
                     const titleVal = document.getElementById(`title-${i}`).value;
                     const descVal = document.getElementById(`desc-${i}`).value;
-                    const fileInput = document.getElementById(`file-${i}`);
 
+                    storyData[i].img = imgVal;
                     storyData[i].title = titleVal;
                     storyData[i].desc = descVal;
-
-                    if (fileInput && fileInput.files[0]) {
-                        const file = fileInput.files[0];
-                        const storageRef = ref(storage, `photos/photo_${i}_${Date.now()}`);
-                        await uploadBytes(storageRef, file);
-                        const downloadURL = await getDownloadURL(storageRef);
-                        storyData[i].img = downloadURL;
-                    }
                 }
 
                 await setDoc(doc(db, "confessions", "mainStory"), { items: storyData });
                 
                 renderReel();
                 document.getElementById('custom-panel').classList.remove('open');
-                alert("恭喜！照片與告白內容已成功同步儲存至雲端！");
+                alert("恭喜！文字與圖片網址已成功同步儲存至雲端！");
             } catch (err) {
-                alert("上傳失敗，請檢查 Firebase 權限或設定：" + err.message);
+                alert("儲存失敗，請檢查網路或 Firebase 設定：" + err.message);
             } finally {
                 loadingMask.style.display = 'none';
             }
@@ -500,8 +486,8 @@
                     <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 15px;">
                         <h3 style="font-size:14px; color:var(--gold-primary); margin-bottom:8px;">卡片 #${index+1}</h3>
                         <div class="form-group">
-                            <label>選擇照片上傳 (檔案)</label>
-                            <input type="file" id="file-${index}" accept="image/*" class="file-input">
+                            <label>照片網址 (URL)</label>
+                            <input type="text" id="img-${index}" value="${item.img}">
                         </div>
                         <div class="form-group">
                             <label>標題</label>
