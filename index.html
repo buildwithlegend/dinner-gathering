@@ -4,16 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>門扇與屏風尺寸計算器 | 建築五金規格試算</title>
-  <!-- PWA 獨立 App 與狀態列設定 -->
   <meta name="theme-color" content="#0f172a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="門扇計算器" />
   <link id="appleTouchIcon" rel="apple-touch-icon" href="" />
   <link id="dynamicManifest" rel="manifest" href="" />
-  <!-- 載入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 載入 Google Fonts (Inter & Noto Sans TC) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -100,7 +97,7 @@
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-      <!-- 左側：輸入參數面板 (佔 5 欄) -->
+      <!-- 左側：輸入參數面板 -->
       <section class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
         <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
           <div>
@@ -111,7 +108,6 @@
         </div>
 
         <form id="calcForm" class="space-y-4" onsubmit="return false;">
-          <!-- 尺寸數值雙欄：見光寬與總高度 -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label for="inputA6" class="block text-sm font-semibold text-slate-700 mb-1.5">見光寬</label>
@@ -146,7 +142,6 @@
             </div>
           </div>
 
-          <!-- 門扇數量與門體類型 -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label for="inputB2" class="block text-sm font-semibold text-slate-700 mb-1.5">門扇數量</label>
@@ -170,14 +165,12 @@
                 id="selectB3"
                 class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3.5 py-2.5 text-slate-900 font-medium focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition cursor-pointer"
               >
-                <option value="一號門體" selected>一號門體 (係數 16)</option>
-                <option value="二號門體">二號門體 (係數 10)</option>
-                <option value="無門體加成">無門體加成 (係數 0)</option>
+                <option value="一號門體" selected>一號門體</option>
+                <option value="二號門體">二號門體</option>
               </select>
             </div>
           </div>
 
-          <!-- 門扇加尺 -->
           <div>
             <label for="inputB10" class="block text-sm font-semibold text-slate-700 mb-1.5">門扇加尺</label>
             <div class="relative">
@@ -195,19 +188,17 @@
 
           <hr class="border-slate-100 my-2" />
 
-          <!-- 屏風寬計算 -->
           <div>
             <label for="selectB5" class="block text-sm font-semibold text-slate-700 mb-1.5">屏風寬計算</label>
             <select
               id="selectB5"
               class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3.5 py-2.5 text-slate-900 font-medium focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition cursor-pointer"
             >
-              <option value="計算屏風寬" selected>計算屏風寬 (扣除屏風，門扇數量減 1)</option>
-              <option value="不計算">不計算 (無屏風，門扇平分)</option>
+              <option value="計算屏風寬" selected>計算屏風寬</option>
+              <option value="不計算">不計算</option>
             </select>
           </div>
 
-          <!-- 軌道高設定與連動方式 -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label for="selectA3" class="block text-sm font-semibold text-slate-700 mb-1.5">軌道高設定</label>
@@ -215,8 +206,8 @@
                 id="selectA3"
                 class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3.5 py-2.5 text-slate-900 font-medium focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition cursor-pointer"
               >
-                <option value="含軌道高" selected>含軌道高 (-47 mm)</option>
-                <option value="不含軌道高">不含軌道高 (-0 mm)</option>
+                <option value="含軌道高" selected>含軌道高</option>
+                <option value="不含軌道高">不含軌道高</option>
               </select>
             </div>
 
@@ -226,14 +217,13 @@
                 id="selectC7"
                 class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3.5 py-2.5 text-slate-900 font-medium focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition cursor-pointer"
               >
-                <option value="同步連動" selected>同步連動 (-12 mm)</option>
-                <option value="不連動">不連動 (-8 mm)</option>
+                <option value="同步連動" selected>同步連動</option>
+                <option value="不連動">不連動</option>
               </select>
             </div>
           </div>
         </form>
 
-        <!-- 錯誤與邊界提示區 -->
         <div id="warningBanner" class="hidden mt-5 rounded-xl bg-amber-50 border border-amber-300 p-3.5 flex items-start gap-2.5 text-amber-900">
           <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -244,15 +234,14 @@
         </div>
       </section>
 
-      <!-- 右側：結果儀表板、動態示意圖與明細 (佔 7 欄) -->
+      <!-- 右側：結果儀表板、動態示意圖與明細 -->
       <div class="lg:col-span-7 space-y-6">
 
-        <!-- 核心輸出結果卡片群 -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
           <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
             <div>
               <h2 class="text-base sm:text-lg font-bold text-slate-900">2. 即時計算結果</h2>
-              <p class="text-xs text-slate-500 mt-0.5">寬度結果已自動執行無條件進位 (ROUNDUP)</p>
+              <p class="text-xs text-slate-500 mt-0.5">寬度結果已自動執行無條件進位</p>
             </div>
             <span id="statusBadge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
               計算正常
@@ -260,7 +249,6 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <!-- 單片門扇寬 -->
             <div id="cardA8" class="rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4 sm:p-5 shadow-sm relative overflow-hidden transition-opacity">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold uppercase tracking-wider text-blue-100">單片門扇寬</span>
@@ -272,7 +260,6 @@
               <p id="subA8" class="text-xs text-blue-100/90 mt-2">共 3 片活動門扇</p>
             </div>
 
-            <!-- 屏風寬 -->
             <div id="cardA12" class="rounded-2xl bg-slate-800 text-white p-4 sm:p-5 shadow-sm relative overflow-hidden transition-opacity">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">屏風寬</span>
@@ -281,10 +268,9 @@
                 <span id="resA12" class="text-3xl sm:text-4xl font-bold tracking-tight">0</span>
                 <span class="text-sm text-slate-300 font-medium">mm</span>
               </div>
-              <p id="subA12" class="text-xs text-slate-300 mt-2">固定屏風 (1 片)</p>
+              <p id="subA12" class="text-xs text-slate-300 mt-2">固定屏風</p>
             </div>
 
-            <!-- 門扇高度 -->
             <div class="rounded-2xl bg-emerald-600 text-white p-4 sm:p-5 shadow-sm relative overflow-hidden">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100">門扇高度</span>
@@ -298,7 +284,6 @@
           </div>
         </section>
 
-        <!-- 視覺化動態配置示意圖 (SVG) -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div>
@@ -322,7 +307,6 @@
           </div>
         </section>
 
-        <!-- 計算明細展開卡片 -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
           <button
             id="btnToggleDetails"
@@ -366,11 +350,11 @@
 
             <div class="bg-slate-900 text-slate-200 rounded-xl p-4 font-mono text-xs space-y-2.5 overflow-x-auto">
               <div>
-                <span class="text-slate-400">// 1. 屏風寬 (不受門扇加尺影響)</span>
+                <span class="text-slate-400">// 1. 屏風寬</span>
                 <div id="formulaA12Text" class="text-amber-300 mt-0.5">--</div>
               </div>
               <div>
-                <span class="text-slate-400">// 2. 單片門扇寬 (包含門扇加尺)</span>
+                <span class="text-slate-400">// 2. 單片門扇寬</span>
                 <div id="formulaA8Text" class="text-sky-300 mt-0.5">--</div>
               </div>
               <div>
@@ -424,7 +408,7 @@
       <div class="p-5 sm:p-6 space-y-4 text-sm text-slate-700 max-h-[80vh] overflow-y-auto">
         <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-emerald-900 text-xs sm:text-sm">
           <p class="font-bold mb-1">✓ 內建離線快取與自動記憶功能</p>
-          <p class="text-emerald-800">只要開啟過一次，系統會自動快取網頁與記憶您上次輸入的尺寸；在沒有網路的工地現場（飛航模式）也能 100% 正常使用。</p>
+          <p class="text-emerald-800">只要開啟過一次，系統會自動快取網頁與記憶您上次輸入的尺寸；在沒有網路的工地現場也能 100% 正常使用。</p>
         </div>
 
         <div class="space-y-3">
@@ -434,7 +418,7 @@
               將此 HTML 檔案轉為網頁連結
             </h4>
             <p class="text-xs text-slate-600 leading-relaxed">
-              將下載的 <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-mono">INDEX.html</code> 上傳至免費靜態空間（例如 <strong>GitHub Pages</strong>、Vercel 或 Netlify），即可獲得一組專屬網址。
+              將下載的 <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-mono">INDEX.html</code> 上傳至免費靜態空間，即可獲得一組專屬網址。
             </p>
           </div>
 
@@ -444,7 +428,7 @@
               iOS Safari 加入主畫面
             </h4>
             <p class="text-xs text-slate-600 leading-relaxed">
-              用 <strong>Safari</strong> 打開網址 → 點擊底部中間的 <strong>「分享」圖示</strong> → 往下滑選擇 <strong>「加入主畫面」</strong>，桌面即會出現獨立全螢幕 App 圖示。
+              用 Safari 打開網址 → 點擊底部中間的分頁圖示 → 往下滑選擇加入主畫面，桌面即會出現獨立全螢幕 App 圖示。
             </p>
           </div>
 
@@ -454,7 +438,7 @@
               Chrome 安裝應用程式
             </h4>
             <p class="text-xs text-slate-600 leading-relaxed">
-              用 <strong>Chrome</strong> 打開網址 → 點擊右上角 <strong>「⋮」選單</strong> → 選擇 <strong>「加到主畫面 / 安裝應用程式」</strong>（電腦版亦可直接雙擊本機 HTML 檔案離線開啟）。
+              用 Chrome 打開網址 → 點擊右上角選單 → 選擇安裝應用程式。
             </p>
           </div>
         </div>
@@ -469,7 +453,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'door_screen_calc_state_v3';
+    const STORAGE_KEY = 'door_screen_calc_state_v4';
     const DEFAULTS = {
       A6: 3000,
       A4: 2400,
@@ -533,9 +517,9 @@
       const A10 = A4 - trackDeduction - syncDeduction;
 
       resA10.textContent = A10;
-      subA10.textContent = `${A3} (-${trackDeduction}) / ${C7} (-${syncDeduction})`;
+      subA10.textContent = `${A3} / ${C7}`;
       detHeightDed.textContent = `-${trackDeduction + syncDeduction} mm`;
-      detHeightRule.textContent = `軌道 ${trackDeduction} + 連動 ${syncDeduction}`;
+      detHeightRule.textContent = `軌道 ${trackDeduction} 搭配 ${C7}`;
       formulaA10Text.textContent = `${A4} - ${trackDeduction} - ${syncDeduction} = ${A10} mm`;
 
       const isCalcScreen = (B5 === '計算屏風寬');
@@ -548,8 +532,8 @@
       }
 
       if (isCalcScreen && B2 <= 1) {
-        showWarning('計算屏風寬時，門扇數量必須大於 1（否則扣除屏風後門扇數減 1 為 0）');
-        renderInvalidWidthState('門扇數量減 1 為 0，無法作為除數');
+        showWarning('計算屏風寬時，門扇數量必須大於 1');
+        renderInvalidWidthState('門扇數量必須大於 1');
         drawSchematic(A6, A4, 0, 0, B2, false);
         return;
       }
@@ -559,7 +543,7 @@
       const qtyMultiplier = (B2 <= 2) ? 1.5 : 2.5;
       const qtyBonus = B2 * qtyMultiplier;
 
-      const bodyMultiplier = (B3 === '一號門體') ? 16 : (B3 === '二號門體' ? 10 : 0);
+      const bodyMultiplier = (B3 === '一號門體') ? 16 : 10;
       const bodyBonusA12 = B2 * bodyMultiplier;
       const bodyBonusA8 = (B2 - 1) * bodyMultiplier;
 
@@ -579,24 +563,24 @@
       resA12.textContent = A12;
       if (isCalcScreen) {
         cardA12.classList.remove('opacity-50');
-        subA12.textContent = '固定屏風 (1 片)';
+        subA12.textContent = '固定屏風';
       } else {
         cardA12.classList.add('opacity-50');
-        subA12.textContent = '未啟用屏風計算 (0)';
+        subA12.textContent = '未啟用屏風計算';
       }
 
       detCountBonus.textContent = `+${qtyBonus}`;
-      detCountRule.textContent = `${B2 <= 2 ? '門扇數 ≤ 2' : '門扇數 > 2'} → ${B2} × ${qtyMultiplier}`;
+      detCountRule.textContent = `${B2 <= 2 ? '數量小於等於2' : '數量大於2'} 乘 ${qtyMultiplier}`;
 
       detBodyBonusA12.textContent = `+${bodyBonusA12}`;
-      detBodyRuleA12.textContent = `${B2} × ${bodyMultiplier}`;
+      detBodyRuleA12.textContent = `${B2} 乘 ${bodyMultiplier}`;
 
       detBodyBonusA8.textContent = `+${bodyBonusA8}`;
-      detBodyRuleA8.textContent = `(${B2} - 1) × ${bodyMultiplier}`;
+      detBodyRuleA8.textContent = `${B2} 減 1 乘 ${bodyMultiplier}`;
 
       formulaA12Text.textContent = isCalcScreen
-        ? `ROUNDUP((${A6} + ${qtyBonus} + ${bodyBonusA12}) / ${B2}) = ${A12} mm (不受門扇加尺影響)`
-        : `屏風計算選擇「不計算」 → 0 mm`;
+        ? `ROUNDUP((${A6} + ${qtyBonus} + ${bodyBonusA12}) / ${B2}) = ${A12} mm`
+        : `屏風計算選擇不計算`;
 
       formulaA8Text.textContent = `ROUNDUP(((${A6} - ${A12}) + ${qtyBonus} + ${bodyBonusA8} + ${B10}) / ${divisorA8}) = ${A8} mm`;
 
@@ -607,12 +591,13 @@
         '【門扇與屏風規格計算結果】',
         `・見光寬：${A6} mm`,
         `・總高度：${A4} mm`,
-        `・門扇數量：${B2} 片（${B3}）`,
+        `・門扇數量：${B2} 片`,
+        `・門體類型：${B3}`,
         `・門扇加尺：${B10} mm`,
         `・屏風寬計算：${B5}`,
         `・軌道與連動：${A3} / ${C7}`,
         '------------------------',
-        `▶ 單片門扇寬：${A8} mm（共 ${divisorA8} 片）`,
+        `▶ 單片門扇寬：${A8} mm`,
         `▶ 屏風寬：${A12} mm`,
         `▶ 門扇高度：${A10} mm`
       ].join('\n');
@@ -636,8 +621,8 @@
       subA8.textContent = '請調整門扇數量';
       resA12.textContent = '—';
       subA12.textContent = '請調整門扇數量';
-      formulaA12Text.textContent = `無法計算（${reason}）`;
-      formulaA8Text.textContent = `無法計算（${reason}）`;
+      formulaA12Text.textContent = `無法計算`;
+      formulaA8Text.textContent = `無法計算`;
       latestSummaryText = `參數異常：${warningText.textContent}`;
     }
 
@@ -825,7 +810,7 @@
 
         if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
           const swCode = `
-            const CACHE_NAME = 'door-calc-offline-v3';
+            const CACHE_NAME = 'door-calc-offline-v4';
             self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll([self.location.href]).catch(() => {}))); });
             self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
             self.addEventListener('fetch', (e) => {
