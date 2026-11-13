@@ -2,8 +2,15 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>門扇與屏風尺寸計算器 | 建築五金規格試算</title>
+  <!-- PWA 獨立 App 與狀態列設定 -->
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="門扇計算器" />
+  <link id="appleTouchIcon" rel="apple-touch-icon" href="" />
+  <link id="dynamicManifest" rel="manifest" href="" />
   <!-- 載入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- 載入 Google Fonts (Inter & Noto Sans TC) -->
@@ -13,6 +20,10 @@
   <style>
     body {
       font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    header {
+      padding-top: env(safe-area-inset-top);
     }
     /* 移除數字輸入框預設上下箭頭（保留清爽外觀，同時保留鍵盤與數字輸入體驗） */
     input[type="number"]::-webkit-inner-spin-button,
@@ -37,33 +48,51 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-lg sm:text-xl font-bold tracking-tight">門扇與屏風尺寸計算器</h1>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight">門扇與屏風尺寸計算器</h1>
+            <span id="offlineStatusPill" class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              離線可用
+            </span>
+          </div>
           <p class="text-xs text-slate-400">Door &amp; Screen Hardware Sizing Calculator</p>
         </div>
       </div>
 
       <!-- 操作按鈕群組 -->
-      <div class="flex items-center gap-2 sm:gap-3">
+      <div class="flex items-center gap-2 sm:gap-2.5">
+        <button
+          id="btnInstallGuide"
+          type="button"
+          class="px-3 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 transition active:scale-95 flex items-center gap-1.5"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <span>安裝 App</span>
+        </button>
+
         <button
           id="btnReset"
           type="button"
-          class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition active:scale-95 flex items-center gap-1.5"
+          class="px-3 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition active:scale-95 flex items-center gap-1.5"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span>重設預設值</span>
+          <span class="hidden sm:inline">重設預設值</span>
+          <span class="sm:hidden">重設</span>
         </button>
 
         <button
           id="btnCopy"
           type="button"
-          class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition active:scale-95 flex items-center gap-1.5"
+          class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition active:scale-95 flex items-center gap-1.5"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
-          <span>複製規格結果</span>
+          <span>複製結果</span>
         </button>
       </div>
     </div>
@@ -93,6 +122,7 @@
               <div class="relative">
                 <input
                   type="number"
+                  inputmode="decimal"
                   id="inputA6"
                   value="3000"
                   min="1"
@@ -110,6 +140,7 @@
               <div class="relative">
                 <input
                   type="number"
+                  inputmode="decimal"
                   id="inputA4"
                   value="2400"
                   min="1"
@@ -130,6 +161,7 @@
               <div class="relative">
                 <input
                   type="number"
+                  inputmode="numeric"
                   id="inputB2"
                   value="4"
                   min="1"
@@ -150,6 +182,7 @@
               >
                 <option value="一號門體" selected>一號門體 (係數 16)</option>
                 <option value="二號門體">二號門體 (係數 10)</option>
+                <option value="無門體加成">無門體加成 (係數 0)</option>
               </select>
             </div>
           </div>
@@ -371,8 +404,81 @@
     <span id="toastMsg">已複製規格結果至剪貼簿！</span>
   </div>
 
+  <!-- 手機安裝 App 與離線使用說明 Modal -->
+  <div
+    id="installModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="installModalTitle"
+  >
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 id="installModalTitle" class="font-bold text-base sm:text-lg">如何把計算器變成離線手機 App？</h3>
+        </div>
+        <button id="btnCloseModal" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-4 text-sm text-slate-700 max-h-[80vh] overflow-y-auto">
+        <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-emerald-900 text-xs sm:text-sm">
+          <p class="font-bold mb-1">✓ 內建離線快取與自動記憶功能</p>
+          <p class="text-emerald-800">只要開啟過一次，系統會自動快取網頁與記憶您上次輸入的尺寸；在沒有網路的工地現場（飛航模式）也能 100% 正常使用。</p>
+        </div>
+
+        <div class="space-y-3">
+          <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70">
+            <h4 class="font-bold text-slate-900 flex items-center gap-2 mb-1.5">
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-white text-xs">步驟 1</span>
+              將此 HTML 檔案轉為網頁連結
+            </h4>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              將下載的 <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-mono">door_calculator.html</code> 上傳至免費靜態空間（例如 <strong>GitHub Pages</strong>、Vercel 或 Netlify），即可獲得一組專屬網址。
+            </p>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70">
+            <h4 class="font-bold text-slate-900 flex items-center gap-2 mb-1.5">
+              <span class="px-2 py-0.5 rounded bg-blue-600 text-white text-xs">iPhone</span>
+              iOS Safari 加入主畫面
+            </h4>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              用 <strong>Safari</strong> 打開網址 → 點擊底部中間的 <strong>「分享」圖示</strong> → 往下滑選擇 <strong>「加入主畫面」</strong>，桌面即會出現獨立全螢幕 App 圖示。
+            </p>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70">
+            <h4 class="font-bold text-slate-900 flex items-center gap-2 mb-1.5">
+              <span class="px-2 py-0.5 rounded bg-emerald-600 text-white text-xs">Android / 電腦</span>
+              Chrome 安裝應用程式
+            </h4>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              用 <strong>Chrome</strong> 打開網址 → 點擊右上角 <strong>「⋮」選單</strong> → 選擇 <strong>「加到主畫面 / 安裝應用程式」</strong>（電腦版亦可直接雙擊本機 HTML 檔案離線開啟）。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button id="btnConfirmModal" type="button" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition">
+          我知道了
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 預設參數常數
+    // LocalStorage 儲存鍵名與預設參數常數
+    const STORAGE_KEY = 'door_screen_calc_state_v1';
     const DEFAULTS = {
       A6: 3000,
       A4: 2400,
@@ -516,6 +622,9 @@
 
       // 更新動態 SVG 示意圖
       drawSchematic(A6, A4, A12, A8, B2, isCalcScreen);
+
+      // 自動儲存最新參數至 LocalStorage（離線開啟時自動還原）
+      saveStateToStorage({ A6, A4, A3, B2, B3, B5, C7 });
 
       // 組合一鍵複製文字內容
       latestSummaryText = [
@@ -712,8 +821,127 @@
       elB3.value = DEFAULTS.B3;
       elB5.value = DEFAULTS.B5;
       elC7.value = DEFAULTS.C7;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {}
       calculateAll();
       showToast('已重設為預設尺寸參數');
+    }
+
+    /**
+     * LocalStorage 狀態保存與讀取
+     */
+    function saveStateToStorage(state) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        // 忽略無痕模式或空間限制錯誤
+      }
+    }
+
+    function restoreStateFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (saved.A6 !== undefined) elA6.value = saved.A6;
+        if (saved.A4 !== undefined) elA4.value = saved.A4;
+        if (saved.A3 !== undefined) elA3.value = saved.A3;
+        if (saved.B2 !== undefined) elB2.value = saved.B2;
+        if (saved.B3 !== undefined) elB3.value = saved.B3;
+        if (saved.B5 !== undefined) elB5.value = saved.B5;
+        if (saved.C7 !== undefined) elC7.value = saved.C7;
+      } catch (e) {
+        // 讀取失敗時維持預設值
+      }
+    }
+
+    /**
+     * 動態生成 PWA App 圖示、Web App Manifest 與離線 Service Worker
+     */
+    function initStandalonePWA() {
+      try {
+        // 1. 生成高解析度 PNG App 圖示 Data URL（供 iOS 主畫面與 Android Manifest 使用）
+        const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+          <defs>
+            <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0f172a"/>
+              <stop offset="100%" stop-color="#1e3a8a"/>
+            </linearGradient>
+          </defs>
+          <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+          <rect x="96" y="96" width="320" height="320" rx="24" fill="none" stroke="#60a5fa" stroke-width="20"/>
+          <line x1="202" y1="96" x2="202" y2="416" stroke="#93c5fd" stroke-width="18"/>
+          <line x1="310" y1="96" x2="310" y2="416" stroke="#93c5fd" stroke-width="18"/>
+          <circle cx="282" cy="256" r="14" fill="#38bdf8"/>
+        </svg>`;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = function () {
+          ctx.drawImage(img, 0, 0, 512, 512);
+          const pngDataUrl = canvas.toDataURL('image/png');
+
+          const appleIcon = document.getElementById('appleTouchIcon');
+          if (appleIcon) appleIcon.href = pngDataUrl;
+
+          const manifestObj = {
+            name: '門扇與屏風尺寸計算器',
+            short_name: '門扇計算器',
+            description: '室內設計與門控五金專屬尺寸試算工具（支援離線運作）',
+            start_url: window.location.href,
+            display: 'standalone',
+            background_color: '#f8fafc',
+            theme_color: '#0f172a',
+            icons: [
+              { src: pngDataUrl, sizes: '192x192', type: 'image/png' },
+              { src: pngDataUrl, sizes: '512x512', type: 'image/png' }
+            ]
+          };
+          const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+          const manifestLink = document.getElementById('dynamicManifest');
+          if (manifestLink) manifestLink.href = URL.createObjectURL(manifestBlob);
+        };
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
+
+        // 2. 註冊離線快取 Service Worker（於 HTTPS 或 localhost 環境生效）
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+          const swCode = `
+            const CACHE_NAME = 'door-calc-offline-v1';
+            self.addEventListener('install', (event) => {
+              self.skipWaiting();
+              event.waitUntil(
+                caches.open(CACHE_NAME).then((cache) => cache.addAll([self.location.href]).catch(() => {}))
+              );
+            });
+            self.addEventListener('activate', (event) => {
+              event.waitUntil(self.clients.claim());
+            });
+            self.addEventListener('fetch', (event) => {
+              if (event.request.method !== 'GET') return;
+              event.respondWith(
+                caches.match(event.request).then((cached) => {
+                  const networkFetch = fetch(event.request).then((response) => {
+                    if (response && response.status === 200) {
+                      const clone = response.clone();
+                      caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+                    }
+                    return response;
+                  }).catch(() => cached);
+                  return cached || networkFetch;
+                })
+              );
+            });
+          `;
+          const swBlob = new Blob([swCode], { type: 'application/javascript' });
+          navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+        }
+      } catch (err) {
+        // 若於受限預覽框內則略過 SW 註冊
+      }
     }
 
     // 綁定輸入事件監聽（即時計算）
@@ -728,6 +956,23 @@
     document.getElementById('btnReset').addEventListener('click', resetToDefaults);
     document.getElementById('btnCopy').addEventListener('click', copyResultsToClipboard);
 
+    // 安裝說明 Modal 開關事件
+    const installModal = document.getElementById('installModal');
+    const openModal = () => {
+      installModal.classList.remove('hidden');
+      installModal.classList.add('flex');
+    };
+    const closeModal = () => {
+      installModal.classList.add('hidden');
+      installModal.classList.remove('flex');
+    };
+    document.getElementById('btnInstallGuide').addEventListener('click', openModal);
+    document.getElementById('btnCloseModal').addEventListener('click', closeModal);
+    document.getElementById('btnConfirmModal').addEventListener('click', closeModal);
+    installModal.addEventListener('click', (e) => {
+      if (e.target === installModal) closeModal();
+    });
+
     // 明細折疊展開切換
     const btnToggleDetails = document.getElementById('btnToggleDetails');
     const detailsContent = document.getElementById('detailsContent');
@@ -737,8 +982,12 @@
       chevronDetails.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
     });
 
-    // 頁面載入後執行首次計算
-    window.addEventListener('DOMContentLoaded', calculateAll);
+    // 頁面載入後還原上次狀態、初始化 PWA 並執行首次計算
+    window.addEventListener('DOMContentLoaded', () => {
+      restoreStateFromStorage();
+      initStandalonePWA();
+      calculateAll();
+    });
   </script>
 </body>
 </html>
