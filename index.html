@@ -94,7 +94,7 @@
   </header>
 
   <!-- 主要內容區塊 -->
-  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
       <!-- 左側：輸入參數面板 -->
@@ -284,6 +284,7 @@
           </div>
         </section>
 
+        <!-- 立面配置示意圖 -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div>
@@ -307,6 +308,7 @@
           </div>
         </section>
 
+        <!-- 計算明細展開卡片 -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
           <button
             id="btnToggleDetails"
@@ -367,6 +369,67 @@
 
       </div>
     </div>
+
+    <!-- 新增獨立分區：開向示意圖（俯視疊合方向） -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">3. 開向示意圖</h2>
+          <p class="text-xs text-slate-500 mt-0.5">俯視門扇疊合方向與主扇位置標示，門片數量自動與上方設定連動</p>
+        </div>
+
+        <!-- 圖例與開向選擇切換 -->
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-3 text-xs font-medium bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-sm bg-emerald-600 inline-block"></span>
+              <span class="text-slate-700">牆柱 / 固定邊</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-sm bg-sky-400 inline-block"></span>
+              <span class="text-slate-700 font-semibold">第一扇（主扇）</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-sm bg-indigo-700 inline-block"></span>
+              <span class="text-slate-700">連動門扇</span>
+            </div>
+          </div>
+
+          <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80" role="group" aria-label="選擇開向">
+            <button
+              type="button"
+              id="btnDirBoth"
+              onclick="setOpeningDirection('both')"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-900 shadow-sm transition"
+            >
+              雙向對照
+            </button>
+            <button
+              type="button"
+              id="btnDirLeft"
+              onclick="setOpeningDirection('left')"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              左拉
+            </button>
+            <button
+              type="button"
+              id="btnDirRight"
+              onclick="setOpeningDirection('right')"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              右拉
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 開向示意圖 SVG 畫布區 -->
+      <div class="w-full bg-slate-50 rounded-xl border border-slate-200/80 p-3 sm:p-5 overflow-hidden">
+        <svg id="openingDirectionSvg" viewBox="0 0 820 230" class="w-full h-auto max-h-64 select-none" role="img" aria-label="門扇開向疊合示意圖"></svg>
+      </div>
+    </section>
+
   </main>
 
   <!-- Toast 通知氣泡 -->
@@ -453,7 +516,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'door_screen_calc_state_v4';
+    const STORAGE_KEY = 'door_screen_calc_state_v5';
     const DEFAULTS = {
       A6: 3000,
       A4: 2400,
@@ -462,8 +525,13 @@
       B3: '一號門體',
       B10: 0,
       B5: '計算屏風寬',
-      C7: '同步連動'
+      C7: '同步連動',
+      openingDir: 'both'
     };
+
+    let currentOpeningDir = DEFAULTS.openingDir;
+    let cachedActiveDoorCount = 3;
+    let cachedHasScreen = true;
 
     const elA6 = document.getElementById('inputA6');
     const elA4 = document.getElementById('inputA4');
@@ -528,6 +596,9 @@
         showWarning('門扇數量必須大於 0');
         renderInvalidWidthState('門扇數量必須大於 0');
         drawSchematic(A6, A4, 0, 0, 0, false);
+        cachedActiveDoorCount = 0;
+        cachedHasScreen = false;
+        drawOpeningDirectionDiagram();
         return;
       }
 
@@ -535,6 +606,9 @@
         showWarning('計算屏風寬時，門扇數量必須大於 1');
         renderInvalidWidthState('門扇數量必須大於 1');
         drawSchematic(A6, A4, 0, 0, B2, false);
+        cachedActiveDoorCount = 0;
+        cachedHasScreen = false;
+        drawOpeningDirectionDiagram();
         return;
       }
 
@@ -556,9 +630,7 @@
 
       cardA8.classList.remove('opacity-50');
       resA8.textContent = A8;
-      subA8.textContent = isCalcScreen
-        ? `共 ${divisorA8} 片活動門扇`
-        : `共 ${divisorA8} 片活動門扇`;
+      subA8.textContent = `共 ${divisorA8} 片活動門扇`;
 
       resA12.textContent = A12;
       if (isCalcScreen) {
@@ -585,7 +657,16 @@
       formulaA8Text.textContent = `ROUNDUP(((${A6} - ${A12}) + ${qtyBonus} + ${bodyBonusA8} + ${B10}) / ${divisorA8}) = ${A8} mm`;
 
       drawSchematic(A6, A4, A12, A8, B2, isCalcScreen);
-      saveStateToStorage({ A6, A4, A3, B2, B3, B10, B5, C7 });
+
+      cachedActiveDoorCount = divisorA8;
+      cachedHasScreen = isCalcScreen;
+      drawOpeningDirectionDiagram();
+
+      saveStateToStorage({ A6, A4, A3, B2, B3, B10, B5, C7, openingDir: currentOpeningDir });
+
+      const dirLabel = currentOpeningDir === 'left'
+        ? '左拉：左向右關'
+        : (currentOpeningDir === 'right' ? '右拉：右向左關' : '雙向對照');
 
       latestSummaryText = [
         '【門扇與屏風規格計算結果】',
@@ -596,11 +677,146 @@
         `・門扇加尺：${B10} mm`,
         `・屏風寬計算：${B5}`,
         `・軌道與連動：${A3} / ${C7}`,
+        `・開向設定：${dirLabel}`,
         '------------------------',
         `▶ 單片門扇寬：${A8} mm`,
         `▶ 屏風寬：${A12} mm`,
         `▶ 門扇高度：${A10} mm`
       ].join('\n');
+    }
+
+    /**
+     * 設定開向模式並更新按鈕樣式與示意圖
+     */
+    function setOpeningDirection(dir) {
+      currentOpeningDir = dir;
+      const btnBoth = document.getElementById('btnDirBoth');
+      const btnLeft = document.getElementById('btnDirLeft');
+      const btnRight = document.getElementById('btnDirRight');
+
+      const activeClass = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-900 shadow-sm transition';
+      const inactiveClass = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+
+      btnBoth.className = dir === 'both' ? activeClass : inactiveClass;
+      btnLeft.className = dir === 'left' ? activeClass : inactiveClass;
+      btnRight.className = dir === 'right' ? activeClass : inactiveClass;
+
+      calculateAll();
+    }
+
+    /**
+     * 繪製開向示意圖（俯視疊合方向、錯位階梯、主扇特別變色、關門方向箭頭）
+     */
+    function drawOpeningDirectionDiagram() {
+      const svg = document.getElementById('openingDirectionSvg');
+      const count = cachedActiveDoorCount > 0 ? cachedActiveDoorCount : 3;
+
+      // 輔助函式：繪製單側開向組合（side: 'left' 或 'right'）
+      const renderSideGroup = (side, centerX, scale) => {
+        const panelW = 145 * scale;
+        const panelH = 16 * scale;
+        const panelGapY = 6 * scale;
+        const stepX = 6 * scale; // 每扇門往關門方向錯開的階梯量
+        const postW = 24 * scale;
+        const postH = Math.max(95 * scale, (count * (panelH + panelGapY) + 34 * scale));
+        const startY = 36;
+
+        let groupSvg = '';
+
+        // 綠色牆柱 / 固定端（左拉在最左側、右拉在最右側）
+        const postX = side === 'left'
+          ? centerX - (panelW / 2 + postW + (count - 1) * stepX * 0.5)
+          : centerX + (panelW / 2 + (count - 1) * stepX * 0.5);
+
+        groupSvg += `
+          <rect x="${postX}" y="${startY}" width="${postW}" height="${postH}" fill="#16a34a" rx="2" />
+          <text x="${postX + postW / 2}" y="${startY - 8}" text-anchor="middle" fill="#15803d" font-size="11" font-weight="700">
+            ${cachedHasScreen ? '屏風側' : '固定邊'}
+          </text>
+        `;
+
+        // 繪製疊合門片（由後排到最前排主扇）
+        // 後排深藍色 #2b3eb1，最前排第一扇（主扇）特別變色為亮藍色 #3b82f6 並加上高亮外框
+        const stackStartY = startY + (postH - (count * panelH + (count - 1) * panelGapY)) / 2;
+
+        for (let i = 0; i < count; i++) {
+          const isPrimary = (i === count - 1); // 最下方（最前排）為第一扇（主扇）
+          const y = stackStartY + i * (panelH + panelGapY);
+          const x = side === 'left'
+            ? (postX + postW) + i * stepX
+            : (postX - panelW) - i * stepX;
+
+          const fillColor = isPrimary ? '#38bdf8' : '#2b3eb1';
+          const strokeColor = isPrimary ? '#0284c7' : '#1e293b';
+          const strokeWidth = isPrimary ? '1.8' : '0.8';
+          const labelText = isPrimary ? '第一扇 主扇' : `門扇 ${count - i}`;
+          const textColor = isPrimary ? '#0f172a' : '#e2e8f0';
+
+          groupSvg += `
+            <rect x="${x}" y="${y}" width="${panelW}" height="${panelH}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}" rx="2" />
+            <text x="${x + panelW / 2}" y="${y + panelH / 2 + 3.5}" text-anchor="middle" fill="${textColor}" font-size="${10 * scale}" font-weight="700">
+              ${labelText}
+            </text>
+          `;
+        }
+
+        // 紫色關門方向箭頭
+        const arrowY = startY + postH + 18;
+        const arrowLen = panelW * 0.85;
+        const arrowStartX = side === 'left' ? postX + postW + 14 : postX - 14;
+        const arrowEndX = side === 'left' ? arrowStartX + arrowLen : arrowStartX - arrowLen;
+        const headSize = 11 * scale;
+
+        if (side === 'left') {
+          groupSvg += `
+            <line x1="${arrowStartX}" y1="${arrowY}" x2="${arrowEndX - headSize + 2}" y2="${arrowY}" stroke="#9333ea" stroke-width="${6 * scale}" />
+            <polygon points="${arrowEndX},${arrowY} ${arrowEndX - headSize * 1.4},${arrowY - headSize * 0.75} ${arrowEndX - headSize * 1.4},${arrowY + headSize * 0.75}" fill="#9333ea" />
+          `;
+        } else {
+          groupSvg += `
+            <line x1="${arrowStartX}" y1="${arrowY}" x2="${arrowEndX + headSize - 2}" y2="${arrowY}" stroke="#9333ea" stroke-width="${6 * scale}" />
+            <polygon points="${arrowEndX},${arrowY} ${arrowEndX + headSize * 1.4},${arrowY - headSize * 0.75} ${arrowEndX + headSize * 1.4},${arrowY + headSize * 0.75}" fill="#9333ea" />
+          `;
+        }
+
+        // 底部開向說明文字
+        const captionText = side === 'left' ? '左拉：左向右關' : '右拉：右向左關';
+        const captionCenterX = (postX + postW / 2 + (side === 'left' ? panelW / 2 : -panelW / 2));
+        groupSvg += `
+          <text x="${captionCenterX}" y="${arrowY + 26}" text-anchor="middle" fill="#1e293b" font-size="14" font-weight="700">
+            ${captionText}
+          </text>
+        `;
+
+        return groupSvg;
+      };
+
+      // 動態調整畫布高度以容納更多門扇
+      const dynamicHeight = Math.max(220, 130 + count * 22);
+      svg.setAttribute('viewBox', `0 0 820 ${dynamicHeight}`);
+
+      let content = '';
+
+      if (currentOpeningDir === 'both') {
+        // 左右雙向並排對照 + 中央綠色分隔標記（還原您提供的參考圖配置）
+        content += renderSideGroup('left', 175, 1.0);
+
+        const midBoxH = Math.max(84, count * 20 + 24);
+        const midBoxY = 36 + (Math.max(95, count * 22 + 34) - midBoxH) / 2;
+        content += `
+          <rect x="380" y="${midBoxY}" width="60" height="${midBoxH}" rx="12" fill="#16a34a" />
+          <text x="410" y="${midBoxY + midBoxH / 2 - 4}" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">開向</text>
+          <text x="410" y="${midBoxY + midBoxH / 2 + 12}" text-anchor="middle" fill="#dcfce7" font-size="10" font-weight="600">對照</text>
+        `;
+
+        content += renderSideGroup('right', 645, 1.0);
+      } else if (currentOpeningDir === 'left') {
+        content += renderSideGroup('left', 410, 1.15);
+      } else {
+        content += renderSideGroup('right', 410, 1.15);
+      }
+
+      svg.innerHTML = content;
     }
 
     function showWarning(msg) {
@@ -758,7 +974,7 @@
       elB5.value = DEFAULTS.B5;
       elC7.value = DEFAULTS.C7;
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-      calculateAll();
+      setOpeningDirection(DEFAULTS.openingDir);
       showToast('已重設為預設尺寸參數');
     }
 
@@ -779,6 +995,9 @@
         if (saved.B10 !== undefined) elB10.value = saved.B10;
         if (saved.B5 !== undefined) elB5.value = saved.B5;
         if (saved.C7 !== undefined) elC7.value = saved.C7;
+        if (saved.openingDir !== undefined) {
+          currentOpeningDir = saved.openingDir;
+        }
       } catch (e) {}
     }
 
@@ -810,7 +1029,7 @@
 
         if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
           const swCode = `
-            const CACHE_NAME = 'door-calc-offline-v4';
+            const CACHE_NAME = 'door-calc-offline-v5';
             self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll([self.location.href]).catch(() => {}))); });
             self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
             self.addEventListener('fetch', (e) => {
@@ -846,7 +1065,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       restoreStateFromStorage();
       initStandalonePWA();
-      calculateAll();
+      setOpeningDirection(currentOpeningDir);
     });
   </script>
 </body>
