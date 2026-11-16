@@ -566,7 +566,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'door_screen_calc_state_v7';
+    const STORAGE_KEY = 'door_screen_calc_state_v8';
     const DEFAULTS = {
       A6: 3000,
       A4: 2400,
@@ -578,7 +578,7 @@
       C7: '同步連動',
       openingDir: 'both',
       primarySide: 'outer',
-      glassOrientation: 'outer' // 'outer' = 凸面朝外, 'inner' = 凸面朝內
+      glassOrientation: 'outer'
     };
 
     let currentOpeningDir = DEFAULTS.openingDir;
@@ -750,9 +750,6 @@
       ].join('\n');
     }
 
-    /**
-     * 切換第三分區內的主分頁（'plan': 俯視開向圖, 'glass': 長虹玻璃側視角）
-     */
     function switchMainTab(tabName) {
       const btnPlan = document.getElementById('mainTabPlan');
       const btnGlass = document.getElementById('mainTabGlass');
@@ -798,43 +795,32 @@
       calculateAll();
     }
 
-    /**
-     * 繪製長虹玻璃側視角剖面圖
-     */
     function drawGlassSideDiagram() {
       const svg = document.getElementById('glassSideSvg');
+      if (!svg) return;
       const isOuter = (currentGlassOrientation === 'outer');
 
       let content = `
-        <!-- 背景與室內外標示 -->
         <rect x="40" y="25" width="740" height="40" rx="8" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5" />
         <text x="410" y="50" text-anchor="middle" fill="#dc2626" font-size="14" font-weight="800">⬆ 內側 (Indoor)</text>
 
         <rect x="40" y="205" width="740" height="40" rx="8" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5" />
         <text x="410" y="230" text-anchor="middle" fill="#1d4ed8" font-size="14" font-weight="800">⬇ 外側 (Outdoor)</text>
 
-        <!-- 中央門扇框架與玻璃剖面 -->
         <g transform="translate(260, 75)">
-          <!-- 鋁框外框 -->
           <rect x="0" y="0" width="300" height="120" rx="6" fill="#1e293b" stroke="#0f172a" stroke-width="2" />
           <rect x="12" y="12" width="276" height="96" rx="4" fill="#f8fafc" stroke="#64748b" stroke-width="1.5" />
-      `;
-
-      // 玻璃主體
-      content += `
           <rect x="24" y="24" width="252" height="72" fill="#e0f2fe" stroke="#38bdf8" stroke-width="1.5" />
       `;
 
-      // 長虹玻璃波紋（根據選擇朝內或朝外決定波紋畫在上方或下方）
       const waveY = isOuter ? 96 : 24;
       const waveLabelY = isOuter ? 116 : 14;
       const waveText = isOuter ? '長虹玻璃凸面波紋（朝外側）' : '長虹玻璃凸面波紋（朝內側）';
 
-      // 繪製連續圓弧波紋代表長虹玻璃直條紋凹凸面
       let wavePath = `M 24 ${waveY}`;
       for (let x = 24; x <= 276; x += 18) {
         const cpY = isOuter ? waveY - 10 : waveY + 10;
-        wavePath +={` Q ${x + 9} ${cpY}, ${x + 18} ${waveY}`};
+        wavePath += ` Q ${x + 9} ${cpY}, ${x + 18} ${waveY}`;
       }
 
       content += `
@@ -844,29 +830,18 @@
           </text>
       `;
 
-      // 平面側（另一側平滑）
       const flatY = isOuter ? 24 : 96;
       content += `
           <line x1="24" y1="${flatY}" x2="276" y2="${flatY}" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 2" />
-      `;
-
-      content += `
         </g>
-
-        <!-- 說明文字標籤 -->
-        <text x="410" y="215" text-anchor="middle" fill="#475569" font-size="12" font-weight="600" visibility="hidden">
-          spacer
-        </text>
       `;
 
       svg.innerHTML = content;
     }
 
-    /**
-     * 繪製俯視開向示意圖
-     */
     function drawOpeningDirectionDiagram() {
       const svg = document.getElementById('openingDirectionSvg');
+      if (!svg) return;
       const count = cachedActiveDoorCount > 0 ? cachedActiveDoorCount : 3;
       const isPrimaryInner = (currentPrimarySide === 'inner');
 
@@ -1011,6 +986,7 @@
 
     function drawSchematic(A6, A4, A12, A8, doorCount, hasScreen) {
       const svg = document.getElementById('schematicSvg');
+      if (!svg) return;
       const activeDoorCount = hasScreen ? Math.max(0, doorCount - 1) : Math.max(0, doorCount);
       const totalPanels = (hasScreen ? 1 : 0) + activeDoorCount;
 
@@ -1202,7 +1178,7 @@
 
         if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
           const swCode = `
-            const CACHE_NAME = 'door-calc-offline-v7';
+            const CACHE_NAME = 'door-calc-offline-v8';
             self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll([self.location.href]).catch(() => {}))); });
             self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
             self.addEventListener('fetch', (e) => {
@@ -1242,6 +1218,7 @@
       setOpeningDirection(currentOpeningDir);
       setGlassOrientation(currentGlassOrientation);
       switchMainTab('plan');
+      calculateAll(); // 確保網頁載入時立刻進行初始化計算與繪圖
     });
   </script>
 </body>
