@@ -370,18 +370,46 @@
       </div>
     </div>
 
-    <!-- 獨立分區：開向示意圖（含內外方向與主扇位置切換） -->
+    <!-- 獨立分區：開向與玻璃配置示意圖 -->
     <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
       <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
         <div>
-          <h2 class="text-base sm:text-lg font-bold text-slate-900">3. 開向示意圖</h2>
-          <p class="text-xs text-slate-500 mt-0.5">俯視門扇疊合方向、內外方位與主扇前後位置標示</p>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">3. 開向與長虹玻璃配置示意圖</h2>
+          <p class="text-xs text-slate-500 mt-0.5">可切換檢視「俯視開向配置」或「長虹玻璃側視角（凹凸面朝向）」</p>
         </div>
 
-        <!-- 圖例、主扇內外切換與開向切換 -->
-        <div class="flex flex-wrap items-center gap-3">
+        <!-- 總功能大分頁切換 -->
+        <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80" role="group" aria-label="示意圖主分頁">
+          <button
+            type="button"
+            id="mainTabPlan"
+            onclick="switchMainTab('plan')"
+            class="px-3.5 py-2 rounded-lg text-xs font-bold bg-white text-blue-700 shadow-sm transition flex items-center gap-1.5"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
+            </svg>
+            <span>俯視開向圖</span>
+          </button>
+          <button
+            type="button"
+            id="mainTabGlass"
+            onclick="switchMainTab('glass')"
+            class="px-3.5 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span>長虹玻璃側視角</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 區塊 A：俯視開向圖工具列與畫布 -->
+      <div id="sectionPlanView" class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200/80">
           <!-- 顏色圖例 -->
-          <div class="flex items-center gap-3 text-xs font-medium bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
+          <div class="flex items-center gap-3 text-xs font-medium">
             <div class="flex items-center gap-1.5">
               <span class="w-3 h-3 rounded-sm bg-emerald-600 inline-block"></span>
               <span class="text-slate-700">固定邊</span>
@@ -396,59 +424,59 @@
             </div>
           </div>
 
-          <!-- 手動切換：主扇在外 / 主扇在內 -->
-          <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80" role="group" aria-label="主扇內外位置">
-            <button
-              type="button"
-              id="btnPrimaryOuter"
-              onclick="setPrimarySide('outer')"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-blue-700 shadow-sm transition"
-            >
-              主扇在外
-            </button>
-            <button
-              type="button"
-              id="btnPrimaryInner"
-              onclick="setPrimarySide('inner')"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
-            >
-              主扇在內
-            </button>
-          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- 主扇內外切換 -->
+            <div class="inline-flex rounded-lg bg-slate-200/70 p-0.5" role="group">
+              <button type="button" id="btnPrimaryOuter" onclick="setPrimarySide('outer')" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-sm transition">主扇在外</button>
+              <button type="button" id="btnPrimaryInner" onclick="setPrimarySide('inner')" class="px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition">主扇在內</button>
+            </div>
 
-          <!-- 開向切換：雙向對照 / 左拉 / 右拉 -->
-          <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80" role="group" aria-label="選擇開向">
-            <button
-              type="button"
-              id="btnDirBoth"
-              onclick="setOpeningDirection('both')"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-900 shadow-sm transition"
-            >
-              雙向對照
-            </button>
-            <button
-              type="button"
-              id="btnDirLeft"
-              onclick="setOpeningDirection('left')"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
-            >
-              左拉
-            </button>
-            <button
-              type="button"
-              id="btnDirRight"
-              onclick="setOpeningDirection('right')"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
-            >
-              右拉
-            </button>
+            <!-- 開向切換 -->
+            <div class="inline-flex rounded-lg bg-slate-200/70 p-0.5" role="group">
+              <button type="button" id="btnDirBoth" onclick="setOpeningDirection('both')" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-sm transition">雙向對照</button>
+              <button type="button" id="btnDirLeft" onclick="setOpeningDirection('left')" class="px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition">左拉</button>
+              <button type="button" id="btnDirRight" onclick="setOpeningDirection('right')" class="px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition">右拉</button>
+            </div>
           </div>
+        </div>
+
+        <div class="w-full bg-slate-50 rounded-xl border border-slate-200/80 p-3 sm:p-5 overflow-hidden">
+          <svg id="openingDirectionSvg" viewBox="0 0 820 270" class="w-full h-auto max-h-80 select-none" role="img" aria-label="門扇開向疊合示意圖"></svg>
         </div>
       </div>
 
-      <!-- 開向示意圖 SVG 畫布區 -->
-      <div class="w-full bg-slate-50 rounded-xl border border-slate-200/80 p-3 sm:p-5 overflow-hidden">
-        <svg id="openingDirectionSvg" viewBox="0 0 820 270" class="w-full h-auto max-h-80 select-none" role="img" aria-label="門扇開向疊合示意圖"></svg>
+      <!-- 區塊 B：長虹玻璃側視角工具列與畫布 -->
+      <div id="sectionGlassView" class="hidden space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200/80">
+          <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+            長虹玻璃凹凸面方向設定（剖面側視）
+          </div>
+
+          <!-- 側視角：凹凸面朝向選擇 -->
+          <div class="inline-flex rounded-lg bg-slate-200/70 p-0.5" role="group" aria-label="玻璃凹凸面朝向">
+            <button
+              type="button"
+              id="btnGlassOuter"
+              onclick="setGlassOrientation('outer')"
+              class="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-sm transition"
+            >
+              凸面朝外（室外側波紋）
+            </button>
+            <button
+              type="button"
+              id="btnGlassInner"
+              onclick="setGlassOrientation('inner')"
+              class="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              凸面朝內（室內側波紋）
+            </button>
+          </div>
+        </div>
+
+        <div class="w-full bg-slate-50 rounded-xl border border-slate-200/80 p-3 sm:p-5 overflow-hidden">
+          <svg id="glassSideSvg" viewBox="0 0 820 270" class="w-full h-auto max-h-80 select-none" role="img" aria-label="長虹玻璃側視角剖面圖"></svg>
+        </div>
       </div>
     </section>
 
@@ -538,7 +566,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'door_screen_calc_state_v6';
+    const STORAGE_KEY = 'door_screen_calc_state_v7';
     const DEFAULTS = {
       A6: 3000,
       A4: 2400,
@@ -549,11 +577,13 @@
       B5: '計算屏風寬',
       C7: '同步連動',
       openingDir: 'both',
-      primarySide: 'outer' // 'outer' = 主扇在外（下方）, 'inner' = 主扇在內（上方）
+      primarySide: 'outer',
+      glassOrientation: 'outer' // 'outer' = 凸面朝外, 'inner' = 凸面朝內
     };
 
     let currentOpeningDir = DEFAULTS.openingDir;
     let currentPrimarySide = DEFAULTS.primarySide;
+    let currentGlassOrientation = DEFAULTS.glassOrientation;
     let cachedActiveDoorCount = 3;
     let cachedHasScreen = true;
 
@@ -623,6 +653,7 @@
         cachedActiveDoorCount = 0;
         cachedHasScreen = false;
         drawOpeningDirectionDiagram();
+        drawGlassSideDiagram();
         return;
       }
 
@@ -633,6 +664,7 @@
         cachedActiveDoorCount = 0;
         cachedHasScreen = false;
         drawOpeningDirectionDiagram();
+        drawGlassSideDiagram();
         return;
       }
 
@@ -685,17 +717,20 @@
       cachedActiveDoorCount = divisorA8;
       cachedHasScreen = isCalcScreen;
       drawOpeningDirectionDiagram();
+      drawGlassSideDiagram();
 
       saveStateToStorage({
         A6, A4, A3, B2, B3, B10, B5, C7,
         openingDir: currentOpeningDir,
-        primarySide: currentPrimarySide
+        primarySide: currentPrimarySide,
+        glassOrientation: currentGlassOrientation
       });
 
       const dirLabel = currentOpeningDir === 'left'
         ? '左拉：左向右關'
         : (currentOpeningDir === 'right' ? '右拉：右向左關' : '雙向對照');
       const primaryLabel = currentPrimarySide === 'outer' ? '主扇在外' : '主扇在內';
+      const glassLabel = currentGlassOrientation === 'outer' ? '凸面朝外' : '凸面朝內';
 
       latestSummaryText = [
         '【門扇與屏風規格計算結果】',
@@ -707,6 +742,7 @@
         `・屏風寬計算：${B5}`,
         `・軌道與連動：${A3} / ${C7}`,
         `・開向與主扇：${dirLabel} / ${primaryLabel}`,
+        `・長虹玻璃面向：${glassLabel}`,
         '------------------------',
         `▶ 單片門扇寬：${A8} mm`,
         `▶ 屏風寬：${A12} mm`,
@@ -715,43 +751,119 @@
     }
 
     /**
-     * 切換主扇位置（'outer': 主扇在外, 'inner': 主扇在內）
+     * 切換第三分區內的主分頁（'plan': 俯視開向圖, 'glass': 長虹玻璃側視角）
      */
+    function switchMainTab(tabName) {
+      const btnPlan = document.getElementById('mainTabPlan');
+      const btnGlass = document.getElementById('mainTabGlass');
+      const sectionPlan = document.getElementById('sectionPlanView');
+      const sectionGlass = document.getElementById('sectionGlassView');
+
+      const activeClass = 'px-3.5 py-2 rounded-lg text-xs font-bold bg-white text-blue-700 shadow-sm transition flex items-center gap-1.5';
+      const inactiveClass = 'px-3.5 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5';
+
+      if (tabName === 'plan') {
+        btnPlan.className = activeClass;
+        btnGlass.className = inactiveClass;
+        sectionPlan.classList.remove('hidden');
+        sectionGlass.classList.add('hidden');
+      } else {
+        btnGlass.className = activeClass;
+        btnPlan.className = inactiveClass;
+        sectionGlass.classList.remove('hidden');
+        sectionPlan.classList.add('hidden');
+        drawGlassSideDiagram();
+      }
+    }
+
     function setPrimarySide(side) {
       currentPrimarySide = side;
-      const btnOuter = document.getElementById('btnPrimaryOuter');
-      const btnInner = document.getElementById('btnPrimaryInner');
-
-      const activeClass = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-blue-700 shadow-sm transition';
-      const inactiveClass = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
-
-      btnOuter.className = side === 'outer' ? activeClass : inactiveClass;
-      btnInner.className = side === 'inner' ? activeClass : inactiveClass;
-
+      document.getElementById('btnPrimaryOuter').className = side === 'outer' ? 'px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-sm transition' : 'px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+      document.getElementById('btnPrimaryInner').className = side === 'inner' ? 'px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-sm transition' : 'px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
       calculateAll();
     }
 
-    /**
-     * 設定開向模式並更新按鈕樣式與示意圖
-     */
     function setOpeningDirection(dir) {
       currentOpeningDir = dir;
-      const btnBoth = document.getElementById('btnDirBoth');
-      const btnLeft = document.getElementById('btnDirLeft');
-      const btnRight = document.getElementById('btnDirRight');
+      document.getElementById('btnDirBoth').className = dir === 'both' ? 'px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-sm transition' : 'px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+      document.getElementById('btnDirLeft').className = dir === 'left' ? 'px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-sm transition' : 'px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+      document.getElementById('btnDirRight').className = dir === 'right' ? 'px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-sm transition' : 'px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+      calculateAll();
+    }
 
-      const activeClass = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-900 shadow-sm transition';
-      const inactiveClass = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
-
-      btnBoth.className = dir === 'both' ? activeClass : inactiveClass;
-      btnLeft.className = dir === 'left' ? activeClass : inactiveClass;
-      btnRight.className = dir === 'right' ? activeClass : inactiveClass;
-
+    function setGlassOrientation(orientation) {
+      currentGlassOrientation = orientation;
+      document.getElementById('btnGlassOuter').className = orientation === 'outer' ? 'px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-sm transition' : 'px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+      document.getElementById('btnGlassInner').className = orientation === 'inner' ? 'px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-sm transition' : 'px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
       calculateAll();
     }
 
     /**
-     * 繪製開向示意圖（含「內 / 外」標示、主扇在內或在外位置切換）
+     * 繪製長虹玻璃側視角剖面圖
+     */
+    function drawGlassSideDiagram() {
+      const svg = document.getElementById('glassSideSvg');
+      const isOuter = (currentGlassOrientation === 'outer');
+
+      let content = `
+        <!-- 背景與室內外標示 -->
+        <rect x="40" y="25" width="740" height="40" rx="8" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5" />
+        <text x="410" y="50" text-anchor="middle" fill="#dc2626" font-size="14" font-weight="800">⬆ 內側 (Indoor)</text>
+
+        <rect x="40" y="205" width="740" height="40" rx="8" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5" />
+        <text x="410" y="230" text-anchor="middle" fill="#1d4ed8" font-size="14" font-weight="800">⬇ 外側 (Outdoor)</text>
+
+        <!-- 中央門扇框架與玻璃剖面 -->
+        <g transform="translate(260, 75)">
+          <!-- 鋁框外框 -->
+          <rect x="0" y="0" width="300" height="120" rx="6" fill="#1e293b" stroke="#0f172a" stroke-width="2" />
+          <rect x="12" y="12" width="276" height="96" rx="4" fill="#f8fafc" stroke="#64748b" stroke-width="1.5" />
+      `;
+
+      // 玻璃主體
+      content += `
+          <rect x="24" y="24" width="252" height="72" fill="#e0f2fe" stroke="#38bdf8" stroke-width="1.5" />
+      `;
+
+      // 長虹玻璃波紋（根據選擇朝內或朝外決定波紋畫在上方或下方）
+      const waveY = isOuter ? 96 : 24;
+      const waveLabelY = isOuter ? 116 : 14;
+      const waveText = isOuter ? '長虹玻璃凸面波紋（朝外側）' : '長虹玻璃凸面波紋（朝內側）';
+
+      // 繪製連續圓弧波紋代表長虹玻璃直條紋凹凸面
+      let wavePath = `M 24 ${waveY}`;
+      for (let x = 24; x <= 276; x += 18) {
+        const cpY = isOuter ? waveY - 10 : waveY + 10;
+        wavePath +={` Q ${x + 9} ${cpY}, ${x + 18} ${waveY}`};
+      }
+
+      content += `
+          <path d="${wavePath}" fill="none" stroke="#0284c7" stroke-width="3.5" stroke-linecap="round" />
+          <text x="150" y="${waveLabelY}" text-anchor="middle" fill="#0369a1" font-size="12" font-weight="700">
+            ${waveText}
+          </text>
+      `;
+
+      // 平面側（另一側平滑）
+      const flatY = isOuter ? 24 : 96;
+      content += `
+          <line x1="24" y1="${flatY}" x2="276" y2="${flatY}" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 2" />
+      `;
+
+      content += `
+        </g>
+
+        <!-- 說明文字標籤 -->
+        <text x="410" y="215" text-anchor="middle" fill="#475569" font-size="12" font-weight="600" visibility="hidden">
+          spacer
+        </text>
+      `;
+
+      svg.innerHTML = content;
+    }
+
+    /**
+     * 繪製俯視開向示意圖
      */
     function drawOpeningDirectionDiagram() {
       const svg = document.getElementById('openingDirectionSvg');
@@ -765,24 +877,21 @@
         const stepX = 6 * scale;
         const postW = 24 * scale;
         const postH = Math.max(95 * scale, (count * (panelH + panelGapY) + 34 * scale));
-        const startY = 58; // 留出上方「內」字空間
+        const startY = 58;
 
         let groupSvg = '';
 
-        // 綠色牆柱 / 固定端
         const postX = side === 'left'
           ? centerX - (panelW / 2 + postW + (count - 1) * stepX * 0.5)
           : centerX + (panelW / 2 + (count - 1) * stepX * 0.5);
 
         const groupCenterX = postX + postW / 2 + (side === 'left' ? panelW / 2 : -panelW / 2);
 
-        // 上方「內」方位標示
         groupSvg += `
           <rect x="${groupCenterX - 24}" y="10" width="48" height="24" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.2" />
           <text x="${groupCenterX}" y="27" text-anchor="middle" fill="#dc2626" font-size="14" font-weight="800">內</text>
         `;
 
-        // 綠色牆柱
         groupSvg += `
           <rect x="${postX}" y="${startY}" width="${postW}" height="${postH}" fill="#16a34a" rx="2" />
           <text x="${postX + postW / 2}" y="${startY - 7}" text-anchor="middle" fill="#15803d" font-size="11" font-weight="700">
@@ -790,14 +899,10 @@
           </text>
         `;
 
-        // 繪製疊合門片（由上「內」到下「外」共 count 排）
         const stackStartY = startY + (postH - (count * panelH + (count - 1) * panelGapY)) / 2;
 
         for (let i = 0; i < count; i++) {
-          // i = 0 是最上方（靠近「內」），i = count - 1 是最下方（靠近「外」）
           const isPrimary = isPrimaryInner ? (i === 0) : (i === count - 1);
-
-          // 階梯錯位方向：主扇永遠延伸最遠（拉出最前頭），其餘連動扇往固定端階梯收疊
           const stepIndex = isPrimaryInner ? (count - 1 - i) : i;
 
           const y = stackStartY + i * (panelH + panelGapY);
@@ -809,7 +914,6 @@
           const strokeColor = isPrimary ? '#0284c7' : '#1e293b';
           const strokeWidth = isPrimary ? '1.8' : '0.8';
 
-          // 門扇編號：主扇為第一扇，依序往另一側編號
           const doorNumber = isPrimaryInner ? (i + 1) : (count - i);
           const labelText = isPrimary ? '第一扇 主扇' : `門扇 ${doorNumber}`;
           const textColor = isPrimary ? '#0f172a' : '#e2e8f0';
@@ -822,7 +926,6 @@
           `;
         }
 
-        // 紫色關門方向箭頭
         const arrowY = startY + postH + 16;
         const arrowLen = panelW * 0.85;
         const arrowStartX = side === 'left' ? postX + postW + 14 : postX - 14;
@@ -841,7 +944,6 @@
           `;
         }
 
-        // 開向說明文字
         const captionText = side === 'left' ? '左拉：左向右關' : '右拉：右向左關';
         groupSvg += `
           <text x="${groupCenterX}" y="${arrowY + 24}" text-anchor="middle" fill="#1e293b" font-size="13" font-weight="700">
@@ -849,7 +951,6 @@
           </text>
         `;
 
-        // 下方「外」方位標示
         const outerBadgeY = arrowY + 34;
         groupSvg += `
           <rect x="${groupCenterX - 24}" y="${outerBadgeY}" width="48" height="24" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.2" />
@@ -1042,8 +1143,11 @@
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
       currentOpeningDir = DEFAULTS.openingDir;
       currentPrimarySide = DEFAULTS.primarySide;
+      currentGlassOrientation = DEFAULTS.glassOrientation;
       setPrimarySide(DEFAULTS.primarySide);
       setOpeningDirection(DEFAULTS.openingDir);
+      setGlassOrientation(DEFAULTS.glassOrientation);
+      switchMainTab('plan');
       showToast('已重設為預設尺寸參數');
     }
 
@@ -1064,12 +1168,9 @@
         if (saved.B10 !== undefined) elB10.value = saved.B10;
         if (saved.B5 !== undefined) elB5.value = saved.B5;
         if (saved.C7 !== undefined) elC7.value = saved.C7;
-        if (saved.openingDir !== undefined) {
-          currentOpeningDir = saved.openingDir;
-        }
-        if (saved.primarySide !== undefined) {
-          currentPrimarySide = saved.primarySide;
-        }
+        if (saved.openingDir !== undefined) currentOpeningDir = saved.openingDir;
+        if (saved.primarySide !== undefined) currentPrimarySide = saved.primarySide;
+        if (saved.glassOrientation !== undefined) currentGlassOrientation = saved.glassOrientation;
       } catch (e) {}
     }
 
@@ -1101,7 +1202,7 @@
 
         if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
           const swCode = `
-            const CACHE_NAME = 'door-calc-offline-v6';
+            const CACHE_NAME = 'door-calc-offline-v7';
             self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll([self.location.href]).catch(() => {}))); });
             self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
             self.addEventListener('fetch', (e) => {
@@ -1139,6 +1240,8 @@
       initStandalonePWA();
       setPrimarySide(currentPrimarySide);
       setOpeningDirection(currentOpeningDir);
+      setGlassOrientation(currentGlassOrientation);
+      switchMainTab('plan');
     });
   </script>
 </body>
